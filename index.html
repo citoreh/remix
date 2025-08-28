@@ -5,116 +5,380 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Persian Remix Music Player</title>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #f0f4f8, #a1c4fd);
-            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            margin: 0;
             padding: 20px;
-            box-sizing: border-box;
             position: relative;
             overflow: hidden;
         }
 
-        #player {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 6px 25px rgba(0, 0, 0, 0.2);
-            padding: 30px;
-            max-width: 400px;
+        /* Animated background elements */
+        .bg-animation {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
-            text-align: center;
-            transition: transform 0.3s ease, background 0.5s ease, color 0.5s ease;
-            position: relative;
-            z-index: 1;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
         }
 
-        #player:hover {
-            transform: translateY(-5px);
+        .wave {
+            position: absolute;
+            width: 200%;
+            height: 200px;
+            background: linear-gradient(90deg, 
+                transparent, 
+                rgba(255, 255, 255, 0.1), 
+                transparent);
+            animation: wave 8s infinite linear;
         }
 
-        audio {
+        .wave:nth-child(1) {
+            top: 10%;
+            animation-delay: 0s;
+        }
+
+        .wave:nth-child(2) {
+            top: 30%;
+            animation-delay: -2s;
+        }
+
+        .wave:nth-child(3) {
+            top: 50%;
+            animation-delay: -4s;
+        }
+
+        .wave:nth-child(4) {
+            top: 70%;
+            animation-delay: -6s;
+        }
+
+        @keyframes wave {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(50%); }
+        }
+
+        .floating-notes {
+            position: absolute;
             width: 100%;
-            margin-bottom: 20px;
-            outline: none;
-            border-radius: 8px;
-        }
-
-        #info {
-            font-size: 16px;
-            line-height: 1.6;
-        }
-
-        #info span {
-            font-weight: bold;
-            transition: color 0.5s ease;
-        }
-
-        h1 {
-            font-size: 26px;
-            margin-bottom: 20px;
-            transition: color 0.5s ease;
-        }
-
-        button {
-            background: #ff6f61;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 16px;
-            margin-bottom: 20px;
-            transition: background 0.3s ease, transform 0.2s ease;
-        }
-
-        button:hover {
-            background: #e55a50;
-            transform: scale(1.05);
+            height: 100%;
         }
 
         .musical-note {
             position: absolute;
-            font-size: 24px;
-            color: rgba(255, 255, 255, 0.7);
-            animation: flyNote 6s infinite ease-in-out;
-            z-index: 0;
+            font-size: 30px;
+            color: rgba(255, 255, 255, 0.3);
+            animation: float 12s infinite ease-in-out;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
         }
 
-        @keyframes flyNote {
+        @keyframes float {
             0% {
-                transform: translateY(100vh) translateX(0) rotate(0deg);
+                transform: translateY(100vh) translateX(0) rotate(0deg) scale(0.5);
                 opacity: 0;
             }
+            10% {
+                opacity: 0.8;
+            }
             50% {
+                opacity: 1;
+                transform: translateY(50vh) translateX(30vw) rotate(180deg) scale(1);
+            }
+            90% {
                 opacity: 0.8;
             }
             100% {
-                transform: translateY(-100vh) translateX(50vw) rotate(360deg);
+                transform: translateY(-100vh) translateX(60vw) rotate(360deg) scale(0.5);
                 opacity: 0;
             }
+        }
+
+        /* Pulsing circles */
+        .pulse-circle {
+            position: absolute;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1), transparent);
+            animation: pulse 6s infinite ease-in-out;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(0.8);
+                opacity: 0.3;
+            }
+            50% {
+                transform: scale(1.2);
+                opacity: 0.1;
+            }
+        }
+
+        #player {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 25px;
+            box-shadow: 
+                0 15px 35px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            padding: 40px;
+            max-width: 450px;
+            width: 100%;
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+            z-index: 10;
+        }
+
+        #player:hover {
+            transform: translateY(-8px);
+            box-shadow: 
+                0 25px 50px rgba(0, 0, 0, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3);
+        }
+
+        h1 {
+            font-size: 32px;
+            margin-bottom: 30px;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4);
+            background-size: 300% 300%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientShift 4s ease infinite;
+            text-shadow: 0 0 30px rgba(255, 255, 255, 0.3);
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .control-btn {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .play-btn {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: white;
+            box-shadow: 
+                0 10px 25px rgba(255, 107, 107, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        .skip-btn {
+            background: linear-gradient(135deg, #4ecdc4, #44a08d);
+            color: white;
+            box-shadow: 
+                0 10px 25px rgba(78, 205, 196, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        .control-btn:hover {
+            transform: translateY(-5px) scale(1.1);
+        }
+
+        .play-btn:hover {
+            box-shadow: 
+                0 15px 35px rgba(255, 107, 107, 0.6),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3);
+        }
+
+        .skip-btn:hover {
+            box-shadow: 
+                0 15px 35px rgba(78, 205, 196, 0.6),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3);
+        }
+
+        .control-btn:active {
+            transform: translateY(-2px) scale(1.05);
+        }
+
+        /* Ripple effect */
+        .control-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transition: all 0.6s ease;
+            transform: translate(-50%, -50%);
+        }
+
+        .control-btn:active::before {
+            width: 100px;
+            height: 100px;
+        }
+
+        audio {
+            width: 100%;
+            margin-bottom: 25px;
+            border-radius: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        audio::-webkit-media-controls-panel {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        #info {
+            font-size: 18px;
+            line-height: 1.8;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        #info p {
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #info span {
+            font-weight: 600;
+            background: linear-gradient(45deg, #ffeaa7, #fdcb6e);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 20px rgba(253, 203, 110, 0.3);
+        }
+
+        .label {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        /* Progress visualization */
+        .visualizer {
+            display: flex;
+            justify-content: center;
+            align-items: end;
+            height: 60px;
+            margin: 20px 0;
+            gap: 4px;
+        }
+
+        .bar {
+            width: 6px;
+            height: 10px;
+            background: linear-gradient(to top, #ff6b6b, #4ecdc4);
+            border-radius: 3px;
+            animation: bounce 1.5s infinite ease-in-out;
+        }
+
+        .bar:nth-child(2n) { animation-delay: -0.2s; }
+        .bar:nth-child(3n) { animation-delay: -0.4s; }
+        .bar:nth-child(4n) { animation-delay: -0.6s; }
+        .bar:nth-child(5n) { animation-delay: -0.8s; }
+
+        @keyframes bounce {
+            0%, 40%, 100% { transform: scaleY(1); }
+            20% { transform: scaleY(2); }
         }
 
         @media (max-width: 480px) {
             #player {
+                padding: 25px;
+                max-width: 350px;
+            }
+            
+            .control-btn {
+                width: 65px;
+                height: 65px;
+                font-size: 24px;
+            }
+            
+            h1 {
+                font-size: 26px;
+            }
+            
+            #info {
+                font-size: 16px;
                 padding: 20px;
             }
         }
     </style>
 </head>
 <body>
+    <div class="bg-animation">
+        <div class="wave"></div>
+        <div class="wave"></div>
+        <div class="wave"></div>
+        <div class="wave"></div>
+        
+        <div class="floating-notes"></div>
+        
+        <div class="pulse-circle" style="top: 10%; left: 10%; width: 100px; height: 100px; animation-delay: 0s;"></div>
+        <div class="pulse-circle" style="top: 20%; right: 15%; width: 150px; height: 150px; animation-delay: 2s;"></div>
+        <div class="pulse-circle" style="bottom: 25%; left: 20%; width: 80px; height: 80px; animation-delay: 4s;"></div>
+        <div class="pulse-circle" style="bottom: 10%; right: 10%; width: 120px; height: 120px; animation-delay: 1s;"></div>
+    </div>
+
     <div id="player">
         <h1>Persian Remix Music Player</h1>
-        <button id="startButton">Play</button>
+        
+        <div class="controls">
+            <button id="playBtn" class="control-btn play-btn">▶</button>
+            <button id="skipBtn" class="control-btn skip-btn">⏭</button>
+        </div>
+        
+        <div class="visualizer">
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+        </div>
+        
         <audio id="audio" controls></audio>
+        
         <div id="info">
-            <p>Title: <span id="title"></span></p>
-            <p>Singer: <span id="singer"></span></p>
-            <p>Prompt: <span id="prompt"></span></p>
+            <p><span class="label">Title:</span> <span id="title">Select a song</span></p>
+            <p><span class="label">Singer:</span> <span id="singer">--</span></p>
+            <p><span class="label">Prompt:</span> <span id="prompt">--</span></p>
         </div>
     </div>
 
@@ -122,12 +386,18 @@
         const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTTPb7TRMHE1IWfyloWxtwdUeB635fDt6vOQhHz7mnIgCAkggaf4GZWyShlVxDiHxburgP-Hm83yD9W/pub?output=csv';
 
         const colorPalettes = [
-            { bg: 'linear-gradient(135deg, #ff9a9e, #fad0c4)', text: '#4a1a2c', accent: '#ff6f61' },
-            { bg: 'linear-gradient(135deg, #a1c4fd, #c2e9fb)', text: '#1a3c5e', accent: '#4a90e2' },
-            { bg: 'linear-gradient(135deg, #84fab0, #8fd3f4)', text: '#1a3c34', accent: '#2ecc71' },
-            { bg: 'linear-gradient(135deg, #ffecd2, #fcb69f)', text: '#4a2c1a', accent: '#e67e22' },
-            { bg: 'linear-gradient(135deg, #d4fc79, #96e6a1)', text: '#2a4a1a', accent: '#27ae60' }
+            { bg: 'linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%)', accent: 'linear-gradient(45deg, #ff6b6b, #ee5a24)' },
+            { bg: 'linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%)', accent: 'linear-gradient(45deg, #4ecdc4, #44a08d)' },
+            { bg: 'linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%)', accent: 'linear-gradient(45deg, #00b894, #00a085)' },
+            { bg: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)', accent: 'linear-gradient(45deg, #fdcb6e, #e17055)' },
+            { bg: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', accent: 'linear-gradient(45deg, #6c5ce7, #a29bfe)' },
+            { bg: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', accent: 'linear-gradient(45deg, #fd79a8, #e84393)' },
+            { bg: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', accent: 'linear-gradient(45deg, #00cec9, #55a3ff)' }
         ];
+
+        let currentData = [];
+        let lastPlayed = null;
+        let isPlaying = false;
 
         function parseCSV(text) {
             const lines = text.split('\n');
@@ -184,65 +454,124 @@
 
         function setRandomTheme() {
             const palette = colorPalettes[Math.floor(Math.random() * colorPalettes.length)];
-            const player = document.getElementById('player');
-            const body = document.body;
-            const infoSpans = document.querySelectorAll('#info span');
-            const h1 = document.querySelector('h1');
-
-            body.style.background = palette.bg;
-            player.style.background = palette.bg;
-            player.style.color = palette.text;
-            h1.style.color = palette.text;
-            infoSpans.forEach(span => span.style.color = palette.accent);
+            document.body.style.background = palette.bg;
         }
 
         function createMusicalNote() {
+            const notes = ['♪', '♫', '♬', '♭', '♮', '♯', '𝄞', '𝄢'];
             const note = document.createElement('div');
             note.className = 'musical-note';
-            note.innerHTML = '♪';
+            note.innerHTML = notes[Math.floor(Math.random() * notes.length)];
             note.style.left = `${Math.random() * 100}vw`;
-            note.style.animationDelay = `${Math.random() * 3}s`;
-            document.body.appendChild(note);
-
-            setTimeout(() => note.remove(), 6000);
+            note.style.fontSize = `${20 + Math.random() * 20}px`;
+            note.style.animationDelay = `${Math.random() * 5}s`;
+            note.style.animationDuration = `${8 + Math.random() * 8}s`;
+            
+            document.querySelector('.floating-notes').appendChild(note);
+            setTimeout(() => note.remove(), 16000);
         }
 
-        function playRandom(data) {
-            if (data.length === 0) return;
-            const randomIndex = Math.floor(Math.random() * data.length);
-            const song = data[randomIndex];
+        function getRandomSong(data, avoidLastPlayed = true) {
+            if (data.length === 0) return null;
             
-            document.getElementById('audio').src = song.url;
+            let availableSongs = data;
+            
+            if (avoidLastPlayed && lastPlayed && data.length > 1) {
+                // Filter out songs with same title or artist as last played
+                availableSongs = data.filter(song => 
+                    song.title.toLowerCase() !== lastPlayed.title.toLowerCase() &&
+                    song.singer.toLowerCase() !== lastPlayed.singer.toLowerCase()
+                );
+                
+                // If no different songs available, use all songs
+                if (availableSongs.length === 0) {
+                    availableSongs = data;
+                }
+            }
+            
+            const randomIndex = Math.floor(Math.random() * availableSongs.length);
+            return availableSongs[randomIndex];
+        }
+
+        function playSong(song) {
+            if (!song) return;
+            
+            const audio = document.getElementById('audio');
+            audio.src = song.url;
             document.getElementById('title').textContent = song.title;
             document.getElementById('singer').textContent = song.singer;
             document.getElementById('prompt').textContent = song.prompt;
             
+            lastPlayed = song;
             setRandomTheme();
             createMusicalNote();
             
-            document.getElementById('audio').play().catch(error => {
+            audio.play().catch(error => {
                 console.error('Playback failed:', error);
             });
         }
 
+        function playRandomSong() {
+            if (currentData.length === 0) return;
+            const song = getRandomSong(currentData);
+            playSong(song);
+        }
+
+        function updatePlayButton() {
+            const playBtn = document.getElementById('playBtn');
+            const audio = document.getElementById('audio');
+            
+            if (audio.paused) {
+                playBtn.innerHTML = '▶';
+                isPlaying = false;
+            } else {
+                playBtn.innerHTML = '⏸';
+                isPlaying = true;
+            }
+        }
+
+        function togglePlayback() {
+            const audio = document.getElementById('audio');
+            
+            if (audio.src && audio.src !== '') {
+                if (audio.paused) {
+                    audio.play();
+                } else {
+                    audio.pause();
+                }
+            } else {
+                playRandomSong();
+            }
+        }
+
         async function init() {
-            const data = await getData();
-            if (data.length === 0) {
+            currentData = await getData();
+            
+            if (currentData.length === 0) {
                 document.getElementById('info').innerHTML = '<p>No songs available.</p>';
                 return;
             }
 
             const audio = document.getElementById('audio');
-            const startButton = document.getElementById('startButton');
+            const playBtn = document.getElementById('playBtn');
+            const skipBtn = document.getElementById('skipBtn');
             
-            startButton.addEventListener('click', () => {
-                startButton.style.display = 'none';
-                playRandom(data);
-            });
-
-            audio.addEventListener('ended', () => playRandom(data));
+            // Play button functionality
+            playBtn.addEventListener('click', togglePlayback);
             
-            setInterval(createMusicalNote, 2000);
+            // Skip button functionality
+            skipBtn.addEventListener('click', playRandomSong);
+            
+            // Audio event listeners
+            audio.addEventListener('play', updatePlayButton);
+            audio.addEventListener('pause', updatePlayButton);
+            audio.addEventListener('ended', playRandomSong);
+            
+            // Create musical notes periodically
+            setInterval(createMusicalNote, 1500);
+            
+            // Initial theme
+            setRandomTheme();
         }
 
         init();
