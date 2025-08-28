@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Random Music Player</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f0f4f8, #a1c4fd);
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #player {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 6px 25px rgba(0, 0, 0, 0.2);
+            padding: 30px;
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+            transition: transform 0.3s ease, background 0.5s ease, color 0.5s ease;
+            position: relative;
+            z-index: 1;
+        }
+
+        #player:hover {
+            transform: translateY(-5px);
+        }
+
+        audio {
+            width: 100%;
+            margin-bottom: 20px;
+            outline: none;
+            border-radius: 8px;
+        }
+
+        #info {
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        #info span {
+            font-weight: bold;
+            transition: color 0.5s ease;
+        }
+
+        h1 {
+            font-size: 26px;
+            margin-bottom: 20px;
+            transition: color 0.5s ease;
+        }
+
+        button {
+            background: #ff6f61;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-bottom: 20px;
+            transition: background 0.3s ease, transform 0.2s ease;
+        }
+
+        button:hover {
+            background: #e55a50;
+            transform: scale(1.05);
+        }
+
+        .musical-note {
+            position: absolute;
+            font-size: 24px;
+            color: rgba(255, 255, 255, 0.7);
+            animation: flyNote 6s infinite ease-in-out;
+            z-index: 0;
+        }
+
+        @keyframes flyNote {
+            0% {
+                transform: translateY(100vh) translateX(0) rotate(0deg);
+                opacity: 0;
+            }
+            50% {
+                opacity: 0.8;
+            }
+            100% {
+                transform: translateY(-100vh) translateX(50vw) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        @media (max-width: 480px) {
+            #player {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="player">
+        <h1>Random Music Player</h1>
+        <button id="startButton">Play</button>
+        <audio id="audio" controls></audio>
+        <div id="info">
+            <p>Title: <span id="title"></span></p>
+            <p>Singer: <span id="singer"></span></p>
+            <p>Prompt: <span id="prompt"></span></p>
+        </div>
+    </div>
+
+    <script>
+        const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTTPb7TRMHE1IWfyloWxtwdUeB635fDt6vOQhHz7mnIgCAkggaf4GZWyShlVxDiHxburgP-Hm83yD9W/pub?output=csv';
+
+        const colorPalettes = [
+            { bg: 'linear-gradient(135deg, #ff9a9e, #fad0c4)', text: '#4a1a2c', accent: '#ff6f61' },
+            { bg: 'linear-gradient(135deg, #a1c4fd, #c2e9fb)', text: '#1a3c5e', accent: '#4a90e2' },
+            { bg: 'linear-gradient(135deg, #84fab0, #8fd3f4)', text: '#1a3c34', accent: '#2ecc71' },
+            { bg: 'linear-gradient(135deg, #ffecd2, #fcb69f)', text: '#4a2c1a', accent: '#e67e22' },
+            { bg: 'linear-gradient(135deg, #d4fc79, #96e6a1)', text: '#2a4a1a', accent: '#27ae60' }
+        ];
+
+        function parseCSV(text) {
+            const lines = text.split('\n');
+            const headers = parseCSVLine(lines[0]);
+            const data = [];
+
+            for (let i = 1; i < lines.length; i++) {
+                const values = parseCSVLine(lines[i]);
+                if (values.length < 4) continue;
+                data.push({
+                    title: values[0].trim(),
+                    singer: values[1].trim(),
+                    url: values[2].trim(),
+                    prompt: values[3].trim()
+                });
+            }
+            return data.filter(item => item && item.url);
+        }
+
+        function parseCSVLine(line) {
+            const result = [];
+            let current = '';
+            let inQuotes = false;
+
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                if (char === '"') {
+                    inQuotes = !inQuotes;
+                } else if (char === ',' && !inQuotes) {
+                    result.push(current);
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            result.push(current);
+            return result;
+        }
+
+        async function getData() {
+            try {
+                const response = await fetch(csvUrl);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch CSV');
+                }
+                const text = await response.text();
+                const data = parseCSV(text);
+                return data;
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                return [];
+            }
+        }
+
+        function setRandomTheme() {
+            const palette = colorPalettes[Math.floor(Math.random() * colorPalettes.length)];
+            const player = document.getElementById('player');
+            const body = document.body;
+            const infoSpans = document.querySelectorAll('#info span');
+            const h1 = document.querySelector('h1');
+
+            body.style.background = palette.bg;
+            player.style.background = palette.bg;
+            player.style.color = palette.text;
+            h1.style.color = palette.text;
+            infoSpans.forEach(span => span.style.color = palette.accent);
+        }
+
+        function createMusicalNote() {
+            const note = document.createElement('div');
+            note.className = 'musical-note';
+            note.innerHTML = '♪';
+            note.style.left = `${Math.random() * 100}vw`;
+            note.style.animationDelay = `${Math.random() * 3}s`;
+            document.body.appendChild(note);
+
+            setTimeout(() => note.remove(), 6000);
+        }
+
+        function playRandom(data) {
+            if (data.length === 0) return;
+            const randomIndex = Math.floor(Math.random() * data.length);
+            const song = data[randomIndex];
+            
+            document.getElementById('audio').src = song.url;
+            document.getElementById('title').textContent = song.title;
+            document.getElementById('singer').textContent = song.singer;
+            document.getElementById('prompt').textContent = song.prompt;
+            
+            setRandomTheme();
+            createMusicalNote();
+            
+            document.getElementById('audio').play().catch(error => {
+                console.error('Playback failed:', error);
+            });
+        }
+
+        async function init() {
+            const data = await getData();
+            if (data.length === 0) {
+                document.getElementById('info').innerHTML = '<p>No songs available.</p>';
+                return;
+            }
+
+            const audio = document.getElementById('audio');
+            const startButton = document.getElementById('startButton');
+            
+            startButton.addEventListener('click', () => {
+                startButton.style.display = 'none';
+                playRandom(data);
+            });
+
+            audio.addEventListener('ended', () => playRandom(data));
+            
+            setInterval(createMusicalNote, 2000);
+        }
+
+        init();
+    </script>
+</body>
+</html>
