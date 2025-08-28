@@ -400,8 +400,8 @@
         <h1>Persian Remix</h1>
         
         <div class="controls">
-            <button id="playBtn" class="control-btn play-btn">Play</button>
-            <button id="skipBtn" class="control-btn skip-btn">Skip</button>
+            <button id="playBtn" class="control-btn play-btn">">"</button>
+            <button id="skipBtn" class="control-btn skip-btn">">>"</button>
         </div>
         
         <div class="visualizer">
@@ -572,10 +572,10 @@
             const audio = document.getElementById('audio');
             
             if (audio.paused) {
-                playBtn.innerHTML = '▶';
+                playBtn.innerHTML = '>';
                 isPlaying = false;
             } else {
-                playBtn.innerHTML = '⏸';
+                playBtn.innerHTML = '"';
                 isPlaying = true;
             }
         }
