@@ -257,33 +257,61 @@
         }
 
         #info {
-            font-size: 18px;
-            line-height: 1.8;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(15px);
+            border-radius: 20px;
+            padding: 0;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            overflow: hidden;
+        }
+
+        .info-item {
+            padding: 20px 25px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            transition: background 0.3s ease;
+        }
+
+        .info-item:last-child {
+            border-bottom: none;
+        }
+
+        .info-item:hover {
             background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 15px;
-            padding: 25px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        #info p {
-            margin-bottom: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        .info-label {
+            font-size: 14px;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.7);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+            display: block;
         }
 
-        #info span {
+        .info-value {
+            font-size: 18px;
             font-weight: 600;
-            background: linear-gradient(45deg, #ffeaa7, #fdcb6e);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            text-shadow: 0 0 20px rgba(253, 203, 110, 0.3);
+            color: #ffffff;
+            line-height: 1.4;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            word-wrap: break-word;
         }
 
-        .label {
-            color: rgba(255, 255, 255, 0.8);
+        .info-value.title {
+            color: #4ecdc4;
+            font-size: 20px;
+        }
+
+        .info-value.singer {
+            color: #ff6b6b;
+            font-size: 19px;
+        }
+
+        .info-value.prompt {
+            color: #ffd93d;
+            font-size: 16px;
+            line-height: 1.5;
         }
 
         /* Progress visualization */
@@ -330,9 +358,24 @@
                 font-size: 26px;
             }
             
-            #info {
+            .info-item {
+                padding: 15px 20px;
+            }
+            
+            .info-value {
                 font-size: 16px;
-                padding: 20px;
+            }
+            
+            .info-value.title {
+                font-size: 18px;
+            }
+            
+            .info-value.singer {
+                font-size: 17px;
+            }
+            
+            .info-value.prompt {
+                font-size: 14px;
             }
         }
     </style>
@@ -376,9 +419,18 @@
         <audio id="audio" controls></audio>
         
         <div id="info">
-            <p><span class="label">Title:</span> <span id="title">Select a song</span></p>
-            <p><span class="label">Singer:</span> <span id="singer">--</span></p>
-            <p><span class="label">Prompt:</span> <span id="prompt">--</span></p>
+            <div class="info-item">
+                <span class="info-label">Title</span>
+                <div id="title" class="info-value title">Select a song</div>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Singer</span>
+                <div id="singer" class="info-value singer">--</div>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Prompt</span>
+                <div id="prompt" class="info-value prompt">--</div>
+            </div>
         </div>
     </div>
 
