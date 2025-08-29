@@ -398,13 +398,22 @@
             }
 
             loadRandomTrack() {
-                if (this.tracks.length === 0) return;
-
-                this.currentTrack = this.selectWeightedRandomTrack();
-                this.updateUI();
-                this.changeTheme();
-                this.updateAudio();
-            }
+    if (this.tracks.length === 0) return;
+    this.currentTrack = this.selectWeightedRandomTrack();
+    this.updateUI();
+    this.changeTheme();
+    this.updateAudio();
+    // Automatically play the new track if the player was already playing
+    if (this.isPlaying) {
+        this.audio.play().then(() => {
+            this.playBtn.textContent = '⏸️';
+            this.isPlaying = true;
+        }).catch(error => {
+            console.error('Play error:', error);
+            this.loadRandomTrack(); // Retry with another track if playback fails
+        });
+    }
+}
 
             updateUI() {
                 if (!this.currentTrack) return;
