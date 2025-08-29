@@ -376,32 +376,67 @@ In Claude.ai artifacts, data resets on refresh due to security restrictions.
 
             async loadData() {
                 try {
+                    console.log('Starting to load data from Google Sheets...');
                     const response = await fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vTTPb7TRMHE1IWfyloWxtwdUeB635fDt6vOQhHz7mnIgCAkggaf4GZWyShlVxDiHxburgP-Hm83yD9W/pub?output=csv');
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
                     const csvText = await response.text();
+                    console.log('CSV data loaded, length:', csvText.length);
+                    
                     this.parseCSV(csvText);
+                    console.log('Parsed tracks:', this.tracks.length);
+                    
+                    if (this.tracks.length === 0) {
+                        throw new Error('No tracks found in CSV data');
+                    }
+                    
                     this.loading.style.display = 'none';
                     this.playerContent.style.display = 'block';
                     this.updateStats(); // Update stats display with loaded data
                     this.loadRandomTrack();
+                    
+                    console.log('Data loaded successfully!');
                 } catch (error) {
                     console.error('Error loading data:', error);
-                    this.loading.textContent = 'Error loading music data';
+                    this.loading.textContent = `Error loading music data: ${error.message}`;
                 }
             }
 
             parseCSV(csvText) {
                 const lines = csvText.split('\n');
-                const headers = lines[0].split(',').map(h => h.trim());
+                if (lines.length < 2) {
+                    console.error('CSV has insufficient data');
+                    return;
+                }
+                
+                const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+                console.log('CSV headers:', headers);
+                
+                this.tracks = []; // Clear existing tracks
                 
                 for (let i = 1; i < lines.length; i++) {
+                    if (!lines[i].trim()) continue; // Skip empty lines
+                    
                     const values = this.parseCSVLine(lines[i]);
-                    if (values.length >= 9 && values[2]) { // Ensure URL exists
+                    if (values.length >= headers.length && values[2] && values[2].trim()) { // Ensure URL exists and not empty
                         const track = {};
                         headers.forEach((header, index) => {
-                            track[header.toLowerCase()] = values[index] ? values[index].trim() : '';
+                            track[header.toLowerCase()] = values[index] ? values[index].trim().replace(/"/g, '') : '';
                         });
-                        this.tracks.push(track);
+                        
+                        // Only add if we have essential fields
+                        if (track.title && track.url) {
+                            this.tracks.push(track);
+                        }
                     }
+                }
+                
+                console.log('Successfully parsed tracks:', this.tracks.length);
+                if (this.tracks.length > 0) {
+                    console.log('Sample track:', this.tracks[0]);
                 }
             }
 
