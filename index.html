@@ -353,8 +353,8 @@ In Claude.ai artifacts, data resets on refresh due to security restrictions.
                 };
                 this.themes = ['theme-neon', 'theme-sunset', 'theme-ocean', 'theme-purple'];
                 
-                this.loadUserData(); // Load saved data
                 this.initializeElements();
+                this.loadUserData(); // Load saved data after elements are initialized
                 this.loadData();
                 this.setupEventListeners();
                 this.createMusicalBackground();
@@ -427,6 +427,12 @@ In Claude.ai artifacts, data resets on refresh due to security restrictions.
 
             loadUserData() {
                 try {
+                    // Check if localStorage is available
+                    if (typeof Storage === "undefined" || !window.localStorage) {
+                        console.log('localStorage not available - using session data only');
+                        return;
+                    }
+                    
                     const saved = localStorage.getItem('iranmix_data');
                     if (saved) {
                         const data = JSON.parse(saved);
@@ -441,14 +447,22 @@ In Claude.ai artifacts, data resets on refresh due to security restrictions.
                             this.userPreferences.dislikes = new Set(data.userPreferences.dislikes || []);
                             this.userPreferences.genreScores = data.userPreferences.genreScores || {};
                         }
+                        
+                        console.log('Loaded user data successfully');
                     }
                 } catch (error) {
-                    console.log('Could not load saved data - starting fresh');
+                    console.log('Could not load saved data - starting fresh:', error.message);
+                    // Don't throw, just continue with empty data
                 }
             }
 
             saveUserData() {
                 try {
+                    // Check if localStorage is available
+                    if (typeof Storage === "undefined" || !window.localStorage) {
+                        return;
+                    }
+                    
                     const dataToSave = {
                         stats: this.stats,
                         userPreferences: {
@@ -460,8 +474,10 @@ In Claude.ai artifacts, data resets on refresh due to security restrictions.
                         timestamp: Date.now()
                     };
                     localStorage.setItem('iranmix_data', JSON.stringify(dataToSave));
+                    console.log('User data saved successfully');
                 } catch (error) {
-                    console.log('Could not save user data');
+                    console.log('Could not save user data:', error.message);
+                    // Don't throw, just continue
                 }
             }
                 if (this.tracks.length === 0) return null;
