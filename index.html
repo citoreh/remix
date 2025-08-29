@@ -1,4 +1,15 @@
 <!DOCTYPE html>
+<!--
+IranMix Music Player
+Features:
+- Avoids repeating same title/singer consecutively
+- Persistent user preferences using localStorage
+- Genre-based learning system (likes boost genre scores, dislikes reduce them)
+- Smart track selection based on user history
+
+Note: localStorage works when saved as HTML file and opened in browser.
+In Claude.ai artifacts, data resets on refresh due to security restrictions.
+-->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -326,6 +337,7 @@
             constructor() {
                 this.tracks = [];
                 this.currentTrack = null;
+                this.previousTrack = null; // Track previous song to avoid repeats
                 this.audio = document.getElementById('audio');
                 this.isPlaying = false;
                 this.userPreferences = {
@@ -341,6 +353,7 @@
                 };
                 this.themes = ['theme-neon', 'theme-sunset', 'theme-ocean', 'theme-purple'];
                 
+                this.loadUserData(); // Load saved data
                 this.initializeElements();
                 this.loadData();
                 this.setupEventListeners();
@@ -368,6 +381,7 @@
                     this.parseCSV(csvText);
                     this.loading.style.display = 'none';
                     this.playerContent.style.display = 'block';
+                    this.updateStats(); // Update stats display with loaded data
                     this.loadRandomTrack();
                 } catch (error) {
                     console.error('Error loading data:', error);
@@ -411,7 +425,45 @@
                 return values;
             }
 
-            selectWeightedRandomTrack() {
+            loadUserData() {
+                try {
+                    const saved = localStorage.getItem('iranmix_data');
+                    if (saved) {
+                        const data = JSON.parse(saved);
+                        
+                        // Load stats
+                        this.stats = data.stats || { played: 0, liked: 0, disliked: 0 };
+                        
+                        // Load preferences
+                        if (data.userPreferences) {
+                            this.userPreferences.plays = data.userPreferences.plays || {};
+                            this.userPreferences.likes = new Set(data.userPreferences.likes || []);
+                            this.userPreferences.dislikes = new Set(data.userPreferences.dislikes || []);
+                            this.userPreferences.genreScores = data.userPreferences.genreScores || {};
+                        }
+                    }
+                } catch (error) {
+                    console.log('Could not load saved data - starting fresh');
+                }
+            }
+
+            saveUserData() {
+                try {
+                    const dataToSave = {
+                        stats: this.stats,
+                        userPreferences: {
+                            plays: this.userPreferences.plays,
+                            likes: Array.from(this.userPreferences.likes),
+                            dislikes: Array.from(this.userPreferences.dislikes),
+                            genreScores: this.userPreferences.genreScores
+                        },
+                        timestamp: Date.now()
+                    };
+                    localStorage.setItem('iranmix_data', JSON.stringify(dataToSave));
+                } catch (error) {
+                    console.log('Could not save user data');
+                }
+            }
                 if (this.tracks.length === 0) return null;
 
                 // Create weighted list based on genre preferences
@@ -439,6 +491,10 @@
 
             loadRandomTrack() {
                 if (this.tracks.length === 0) return;
+                
+                // Store previous track to avoid repeats
+                this.previousTrack = this.currentTrack;
+                
                 this.currentTrack = this.selectWeightedRandomTrack();
                 this.updateUI();
                 this.changeTheme();
@@ -573,6 +629,7 @@
                 });
                 
                 this.updateStats();
+                this.saveUserData(); // Save after each play
             }
 
             likeTrack() {
@@ -583,6 +640,14 @@
                 if (this.userPreferences.likes.has(trackId)) {
                     this.userPreferences.likes.delete(trackId);
                     this.stats.liked--;
+                    
+                    // Remove genre boost for unliked track
+                    [this.currentTrack.genre1, this.currentTrack.genre2].forEach(genre => {
+                        if (genre) {
+                            this.userPreferences.genreScores[genre] = 
+                                (this.userPreferences.genreScores[genre] || 0) - 3;
+                        }
+                    });
                 } else {
                     this.userPreferences.likes.add(trackId);
                     this.userPreferences.dislikes.delete(trackId);
@@ -593,13 +658,14 @@
                     [this.currentTrack.genre1, this.currentTrack.genre2].forEach(genre => {
                         if (genre) {
                             this.userPreferences.genreScores[genre] = 
-                                (this.userPreferences.genreScores[genre] || 0) + 3;
+                                (this.userPreferences.genreScores[genre] || 0) + 5;
                         }
                     });
                 }
                 
                 this.updateUI();
                 this.updateStats();
+                this.saveUserData(); // Save after like/unlike
             }
 
             dislikeTrack() {
@@ -610,6 +676,14 @@
                 if (this.userPreferences.dislikes.has(trackId)) {
                     this.userPreferences.dislikes.delete(trackId);
                     this.stats.disliked--;
+                    
+                    // Remove genre penalty for un-disliked track
+                    [this.currentTrack.genre1, this.currentTrack.genre2].forEach(genre => {
+                        if (genre) {
+                            this.userPreferences.genreScores[genre] = 
+                                (this.userPreferences.genreScores[genre] || 0) + 3;
+                        }
+                    });
                 } else {
                     this.userPreferences.dislikes.add(trackId);
                     this.userPreferences.likes.delete(trackId);
@@ -620,7 +694,7 @@
                     [this.currentTrack.genre1, this.currentTrack.genre2].forEach(genre => {
                         if (genre) {
                             this.userPreferences.genreScores[genre] = 
-                                (this.userPreferences.genreScores[genre] || 0) - 2;
+                                (this.userPreferences.genreScores[genre] || 0) - 4;
                         }
                     });
                     
@@ -634,12 +708,18 @@
                 
                 this.updateUI();
                 this.updateStats();
+                this.saveUserData(); // Save after dislike
             }
 
             updateStats() {
                 document.getElementById('playedCount').textContent = this.stats.played;
                 document.getElementById('likeCount').textContent = this.stats.liked;
                 document.getElementById('dislikeCount').textContent = this.stats.disliked;
+                
+                // Debug: Log genre scores to console for user to see learning progress
+                if (Object.keys(this.userPreferences.genreScores).length > 0) {
+                    console.log('Genre Preferences:', this.userPreferences.genreScores);
+                }
             }
         }
 
