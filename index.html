@@ -116,14 +116,15 @@
             border: none;
             background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
             color: white;
-            font-size: 2rem;
+            font-size: 1.8rem;
             cursor: pointer;
             transition: all 0.3s ease;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
             display: flex;
             align-items: center;
             justify-content: center;
-            position: relative;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            font-weight: normal;
         }
 
         .play-button:hover {
@@ -133,27 +134,6 @@
 
         .play-button:active {
             transform: scale(0.95);
-        }
-
-        /* Modern Play Icon */
-        .play-icon::before {
-            content: '';
-            width: 0;
-            height: 0;
-            border-left: 20px solid white;
-            border-top: 12px solid transparent;
-            border-bottom: 12px solid transparent;
-            margin-left: 4px;
-        }
-
-        /* Modern Pause Icon */
-        .pause-icon::before {
-            content: '';
-            width: 6px;
-            height: 24px;
-            background: white;
-            box-shadow: 12px 0 0 white;
-            border-radius: 2px;
         }
 
         .controls {
@@ -167,59 +147,27 @@
             border-radius: 50%;
             border: none;
             cursor: pointer;
-            font-size: 1.2rem;
+            font-size: 1.3rem;
             transition: all 0.3s ease;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
             display: flex;
             align-items: center;
             justify-content: center;
-            position: relative;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
         }
 
         .like-btn {
             background: linear-gradient(45deg, #ff9a9e, #fecfef);
+            color: #d63384;
         }
 
         .dislike-btn {
             background: linear-gradient(45deg, #a8edea, #fed6e3);
+            color: #6c757d;
         }
 
         .like-btn:hover, .dislike-btn:hover {
             transform: scale(1.1);
-        }
-
-        /* Modern Heart Icon */
-        .heart-icon {
-            position: relative;
-            display: inline-block;
-            width: 20px;
-            height: 18px;
-        }
-
-        .heart-icon::before,
-        .heart-icon::after {
-            content: '';
-            position: absolute;
-            width: 10px;
-            height: 16px;
-            background: #d63384;
-            border-radius: 5px 5px 0 0;
-            transform: rotate(-45deg);
-            transform-origin: 0 100%;
-        }
-
-        .heart-icon::after {
-            left: 5px;
-            transform: rotate(45deg);
-            transform-origin: 100% 100%;
-        }
-
-        /* Modern Thumbs Down Icon */
-        .thumbs-down-icon::before {
-            content: '✕';
-            font-size: 1.4rem;
-            color: #6c757d;
-            font-weight: bold;
         }
 
         .metadata {
@@ -286,6 +234,7 @@
             align-items: center;
             gap: 0.5rem;
             opacity: 0.9;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
         }
 
         .stat-icon {
@@ -323,16 +272,16 @@
     
     <div class="stats" id="stats">
         <div class="stat-item">
-            <span class="stat-icon">🎵</span>
+            <span class="stat-icon">♪</span>
             <span>Played: <span id="playedCount">0</span></span>
         </div>
         <div class="stat-item">
-            <span class="stat-icon">💖</span>
+            <span class="stat-icon">♥</span>
             <span>Likes: <span id="likeCount">0</span></span>
         </div>
         <div class="stat-item">
-            <span class="stat-icon">💔</span>
-            <span>Dislikes: <span id="dislikeCount">0</span></span>
+            <span class="stat-icon">✕</span>
+            <span>Skipped: <span id="dislikeCount">0</span></span>
         </div>
     </div>
 
@@ -348,15 +297,9 @@
             </div>
 
             <div class="player-container">
-                <button class="like-btn" id="likeBtn" title="Like">
-                    <span class="heart-icon"></span>
-                </button>
-                <button class="play-button" id="playBtn">
-                    <span class="play-icon" id="playIcon"></span>
-                </button>
-                <button class="dislike-btn" id="dislikeBtn" title="Skip">
-                    <span class="thumbs-down-icon"></span>
-                </button>
+                <button class="like-btn" id="likeBtn" title="Like">♥</button>
+                <button class="play-button" id="playBtn">▶︎</button>
+                <button class="dislike-btn" id="dislikeBtn" title="Skip">✕</button>
             </div>
 
             <div class="metadata">
@@ -406,7 +349,6 @@
 
             initializeElements() {
                 this.playBtn = document.getElementById('playBtn');
-                this.playIcon = document.getElementById('playIcon');
                 this.likeBtn = document.getElementById('likeBtn');
                 this.dislikeBtn = document.getElementById('dislikeBtn');
                 this.trackTitle = document.getElementById('trackTitle');
@@ -504,7 +446,7 @@
                 // Automatically play the new track if the player was already playing
                 if (this.isPlaying) {
                     this.audio.play().then(() => {
-                        this.playIcon.className = 'pause-icon';
+                        this.playBtn.textContent = '⏸︎';
                         this.isPlaying = true;
                     }).catch(error => {
                         console.error('Play error:', error);
@@ -592,11 +534,11 @@
 
             playTrack() {
                 this.audio.play().then(() => {
-                    this.playIcon.className = 'pause-icon';
+                    this.playBtn.textContent = '⏸︎';
                     this.isPlaying = true;
                 }).catch(error => {
                     console.error('Play error:', error);
-                    this.playIcon.className = 'play-icon';
+                    this.playBtn.textContent = '▶︎';
                     this.isPlaying = false;
                 });
             }
@@ -604,7 +546,7 @@
             togglePlay() {
                 if (this.isPlaying) {
                     this.audio.pause();
-                    this.playIcon.className = 'play-icon';
+                    this.playBtn.textContent = '▶︎';
                     this.isPlaying = false;
                 } else {
                     this.playTrack();
