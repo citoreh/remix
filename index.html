@@ -24,6 +24,7 @@
             color: white;
             overflow: hidden;
             position: relative;
+            padding-bottom: 80px; /* Space for footer */
         }
 
         @keyframes gradientShift {
@@ -122,6 +123,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            position: relative;
         }
 
         .play-button:hover {
@@ -131,6 +133,27 @@
 
         .play-button:active {
             transform: scale(0.95);
+        }
+
+        /* Modern Play Icon */
+        .play-icon::before {
+            content: '';
+            width: 0;
+            height: 0;
+            border-left: 20px solid white;
+            border-top: 12px solid transparent;
+            border-bottom: 12px solid transparent;
+            margin-left: 4px;
+        }
+
+        /* Modern Pause Icon */
+        .pause-icon::before {
+            content: '';
+            width: 6px;
+            height: 24px;
+            background: white;
+            box-shadow: 12px 0 0 white;
+            border-radius: 2px;
         }
 
         .controls {
@@ -144,23 +167,59 @@
             border-radius: 50%;
             border: none;
             cursor: pointer;
-            font-size: 1.5rem;
+            font-size: 1.2rem;
             transition: all 0.3s ease;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
         }
 
         .like-btn {
             background: linear-gradient(45deg, #ff9a9e, #fecfef);
-            color: #d63384;
         }
 
         .dislike-btn {
             background: linear-gradient(45deg, #a8edea, #fed6e3);
-            color: #6c757d;
         }
 
         .like-btn:hover, .dislike-btn:hover {
             transform: scale(1.1);
+        }
+
+        /* Modern Heart Icon */
+        .heart-icon {
+            position: relative;
+            display: inline-block;
+            width: 20px;
+            height: 18px;
+        }
+
+        .heart-icon::before,
+        .heart-icon::after {
+            content: '';
+            position: absolute;
+            width: 10px;
+            height: 16px;
+            background: #d63384;
+            border-radius: 5px 5px 0 0;
+            transform: rotate(-45deg);
+            transform-origin: 0 100%;
+        }
+
+        .heart-icon::after {
+            left: 5px;
+            transform: rotate(45deg);
+            transform-origin: 100% 100%;
+        }
+
+        /* Modern Thumbs Down Icon */
+        .thumbs-down-icon::before {
+            content: '✕';
+            font-size: 1.4rem;
+            color: #6c757d;
+            font-weight: bold;
         }
 
         .metadata {
@@ -199,15 +258,38 @@
         }
 
         .stats {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: rgba(0, 0, 0, 0.3);
-            padding: 1rem;
-            border-radius: 15px;
-            backdrop-filter: blur(10px);
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(15px);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
             font-size: 0.9rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
             z-index: 10;
+        }
+
+        @media (max-width: 768px) {
+            .stats {
+                gap: 1rem;
+                padding: 0.75rem 1rem;
+                font-size: 0.8rem;
+            }
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            opacity: 0.9;
+        }
+
+        .stat-icon {
+            font-size: 1.1rem;
         }
 
         /* Dynamic theme classes */
@@ -240,9 +322,18 @@
     <div class="musical-bg" id="musicalBg"></div>
     
     <div class="stats" id="stats">
-        <div>Songs Played: <span id="playedCount">0</span></div>
-        <div>Likes: <span id="likeCount">0</span></div>
-        <div>Dislikes: <span id="dislikeCount">0</span></div>
+        <div class="stat-item">
+            <span class="stat-icon">🎵</span>
+            <span>Played: <span id="playedCount">0</span></span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-icon">💖</span>
+            <span>Likes: <span id="likeCount">0</span></span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-icon">💔</span>
+            <span>Dislikes: <span id="dislikeCount">0</span></span>
+        </div>
     </div>
 
     <div class="container" id="container">
@@ -257,9 +348,15 @@
             </div>
 
             <div class="player-container">
-                <button class="like-btn" id="likeBtn" title="Like">❤️</button>
-                <button class="play-button" id="playBtn">▶️</button>
-                <button class="dislike-btn" id="dislikeBtn" title="Dislike">👎</button>
+                <button class="like-btn" id="likeBtn" title="Like">
+                    <span class="heart-icon"></span>
+                </button>
+                <button class="play-button" id="playBtn">
+                    <span class="play-icon" id="playIcon"></span>
+                </button>
+                <button class="dislike-btn" id="dislikeBtn" title="Skip">
+                    <span class="thumbs-down-icon"></span>
+                </button>
             </div>
 
             <div class="metadata">
@@ -309,6 +406,7 @@
 
             initializeElements() {
                 this.playBtn = document.getElementById('playBtn');
+                this.playIcon = document.getElementById('playIcon');
                 this.likeBtn = document.getElementById('likeBtn');
                 this.dislikeBtn = document.getElementById('dislikeBtn');
                 this.trackTitle = document.getElementById('trackTitle');
@@ -406,7 +504,7 @@
                 // Automatically play the new track if the player was already playing
                 if (this.isPlaying) {
                     this.audio.play().then(() => {
-                        this.playBtn.textContent = '⏸️';
+                        this.playIcon.className = 'pause-icon';
                         this.isPlaying = true;
                     }).catch(error => {
                         console.error('Play error:', error);
@@ -433,8 +531,8 @@
 
                 // Update like/dislike button states
                 const trackId = this.getTrackId(this.currentTrack);
-                this.likeBtn.style.opacity = this.userPreferences.likes.has(trackId) ? '1' : '0.7';
-                this.dislikeBtn.style.opacity = this.userPreferences.dislikes.has(trackId) ? '1' : '0.7';
+                this.likeBtn.style.opacity = this.userPreferences.likes.has(trackId) ? '1' : '0.6';
+                this.dislikeBtn.style.opacity = this.userPreferences.dislikes.has(trackId) ? '1' : '0.6';
             }
 
             updateAudio() {
@@ -494,11 +592,11 @@
 
             playTrack() {
                 this.audio.play().then(() => {
-                    this.playBtn.textContent = '⏸️';
+                    this.playIcon.className = 'pause-icon';
                     this.isPlaying = true;
                 }).catch(error => {
                     console.error('Play error:', error);
-                    this.playBtn.textContent = '▶️';
+                    this.playIcon.className = 'play-icon';
                     this.isPlaying = false;
                 });
             }
@@ -506,7 +604,7 @@
             togglePlay() {
                 if (this.isPlaying) {
                     this.audio.pause();
-                    this.playBtn.textContent = '▶️';
+                    this.playIcon.className = 'play-icon';
                     this.isPlaying = false;
                 } else {
                     this.playTrack();
