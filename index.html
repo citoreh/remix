@@ -1,15 +1,4 @@
 <!DOCTYPE html>
-<!--
-IranMix Music Player
-Features:
-- Avoids repeating same title/singer consecutively
-- Persistent user preferences using localStorage
-- Genre-based learning system (likes boost genre scores, dislikes reduce them)
-- Smart track selection based on user history
-
-Note: localStorage works when saved as HTML file and opened in browser.
-In Claude.ai artifacts, data resets on refresh due to security restrictions.
--->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -35,7 +24,7 @@ In Claude.ai artifacts, data resets on refresh due to security restrictions.
             color: white;
             overflow: hidden;
             position: relative;
-            padding-bottom: 80px; /* Space for footer */
+            padding-bottom: 80px;
         }
 
         @keyframes gradientShift {
@@ -135,7 +124,6 @@ In Claude.ai artifacts, data resets on refresh due to security restrictions.
             align-items: center;
             justify-content: center;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-            font-weight: normal;
         }
 
         .play-button:hover {
@@ -145,11 +133,6 @@ In Claude.ai artifacts, data resets on refresh due to security restrictions.
 
         .play-button:active {
             transform: scale(0.95);
-        }
-
-        .controls {
-            display: flex;
-            gap: 1rem;
         }
 
         .like-btn, .dislike-btn {
@@ -254,26 +237,18 @@ In Claude.ai artifacts, data resets on refresh due to security restrictions.
 
         /* Dynamic theme classes */
         .theme-neon {
-            --primary: #00ff88;
-            --secondary: #0088ff;
             filter: hue-rotate(120deg);
         }
 
         .theme-sunset {
-            --primary: #ff6b35;
-            --secondary: #f7931e;
             filter: hue-rotate(30deg);
         }
 
         .theme-ocean {
-            --primary: #006ba6;
-            --secondary: #0496c7;
             filter: hue-rotate(200deg);
         }
 
         .theme-purple {
-            --primary: #7209b7;
-            --secondary: #c77dff;
             filter: hue-rotate(270deg);
         }
     </style>
@@ -337,7 +312,7 @@ In Claude.ai artifacts, data resets on refresh due to security restrictions.
             constructor() {
                 this.tracks = [];
                 this.currentTrack = null;
-                this.previousTrack = null; // Track previous song to avoid repeats
+                this.previousTrack = null;
                 this.audio = document.getElementById('audio');
                 this.isPlaying = false;
                 this.userPreferences = {
@@ -354,7 +329,7 @@ In Claude.ai artifacts, data resets on refresh due to security restrictions.
                 this.themes = ['theme-neon', 'theme-sunset', 'theme-ocean', 'theme-purple'];
                 
                 this.initializeElements();
-                this.loadUserData(); // Load saved data after elements are initialized
+                this.loadUserData();
                 this.loadData();
                 this.setupEventListeners();
                 this.createMusicalBackground();
@@ -374,69 +349,73 @@ In Claude.ai artifacts, data resets on refresh due to security restrictions.
                 this.container = document.getElementById('container');
             }
 
+            loadUserData() {
+                try {
+                    if (typeof(Storage) !== "undefined" && localStorage) {
+                        const saved = localStorage.getItem('iranmix_data');
+                        if (saved) {
+                            const data = JSON.parse(saved);
+                            this.stats = data.stats || this.stats;
+                            if (data.userPreferences) {
+                                this.userPreferences.plays = data.userPreferences.plays || {};
+                                this.userPreferences.likes = new Set(data.userPreferences.likes || []);
+                                this.userPreferences.dislikes = new Set(data.userPreferences.dislikes || []);
+                                this.userPreferences.genreScores = data.userPreferences.genreScores || {};
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.log('localStorage not available');
+                }
+            }
+
+            saveUserData() {
+                try {
+                    if (typeof(Storage) !== "undefined" && localStorage) {
+                        const dataToSave = {
+                            stats: this.stats,
+                            userPreferences: {
+                                plays: this.userPreferences.plays,
+                                likes: Array.from(this.userPreferences.likes),
+                                dislikes: Array.from(this.userPreferences.dislikes),
+                                genreScores: this.userPreferences.genreScores
+                            }
+                        };
+                        localStorage.setItem('iranmix_data', JSON.stringify(dataToSave));
+                    }
+                } catch (e) {
+                    // Silent fail
+                }
+            }
+
             async loadData() {
                 try {
-                    console.log('Starting to load data from Google Sheets...');
                     const response = await fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vTTPb7TRMHE1IWfyloWxtwdUeB635fDt6vOQhHz7mnIgCAkggaf4GZWyShlVxDiHxburgP-Hm83yD9W/pub?output=csv');
-                    
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    
                     const csvText = await response.text();
-                    console.log('CSV data loaded, length:', csvText.length);
-                    
                     this.parseCSV(csvText);
-                    console.log('Parsed tracks:', this.tracks.length);
-                    
-                    if (this.tracks.length === 0) {
-                        throw new Error('No tracks found in CSV data');
-                    }
-                    
                     this.loading.style.display = 'none';
                     this.playerContent.style.display = 'block';
-                    this.updateStats(); // Update stats display with loaded data
+                    this.updateStats();
                     this.loadRandomTrack();
-                    
-                    console.log('Data loaded successfully!');
                 } catch (error) {
                     console.error('Error loading data:', error);
-                    this.loading.textContent = `Error loading music data: ${error.message}`;
+                    this.loading.textContent = 'Error loading music data';
                 }
             }
 
             parseCSV(csvText) {
                 const lines = csvText.split('\n');
-                if (lines.length < 2) {
-                    console.error('CSV has insufficient data');
-                    return;
-                }
-                
                 const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
-                console.log('CSV headers:', headers);
-                
-                this.tracks = []; // Clear existing tracks
                 
                 for (let i = 1; i < lines.length; i++) {
-                    if (!lines[i].trim()) continue; // Skip empty lines
-                    
                     const values = this.parseCSVLine(lines[i]);
-                    if (values.length >= headers.length && values[2] && values[2].trim()) { // Ensure URL exists and not empty
+                    if (values.length >= 9 && values[2]) { // Ensure URL exists
                         const track = {};
                         headers.forEach((header, index) => {
                             track[header.toLowerCase()] = values[index] ? values[index].trim().replace(/"/g, '') : '';
                         });
-                        
-                        // Only add if we have essential fields
-                        if (track.title && track.url) {
-                            this.tracks.push(track);
-                        }
+                        this.tracks.push(track);
                     }
-                }
-                
-                console.log('Successfully parsed tracks:', this.tracks.length);
-                if (this.tracks.length > 0) {
-                    console.log('Sample track:', this.tracks[0]);
                 }
             }
 
@@ -460,75 +439,37 @@ In Claude.ai artifacts, data resets on refresh due to security restrictions.
                 return values;
             }
 
-            loadUserData() {
-                try {
-                    // Check if localStorage is available
-                    if (typeof Storage === "undefined" || !window.localStorage) {
-                        console.log('localStorage not available - using session data only');
-                        return;
-                    }
-                    
-                    const saved = localStorage.getItem('iranmix_data');
-                    if (saved) {
-                        const data = JSON.parse(saved);
-                        
-                        // Load stats
-                        this.stats = data.stats || { played: 0, liked: 0, disliked: 0 };
-                        
-                        // Load preferences
-                        if (data.userPreferences) {
-                            this.userPreferences.plays = data.userPreferences.plays || {};
-                            this.userPreferences.likes = new Set(data.userPreferences.likes || []);
-                            this.userPreferences.dislikes = new Set(data.userPreferences.dislikes || []);
-                            this.userPreferences.genreScores = data.userPreferences.genreScores || {};
-                        }
-                        
-                        console.log('Loaded user data successfully');
-                    }
-                } catch (error) {
-                    console.log('Could not load saved data - starting fresh:', error.message);
-                    // Don't throw, just continue with empty data
-                }
-            }
-
-            saveUserData() {
-                try {
-                    // Check if localStorage is available
-                    if (typeof Storage === "undefined" || !window.localStorage) {
-                        return;
-                    }
-                    
-                    const dataToSave = {
-                        stats: this.stats,
-                        userPreferences: {
-                            plays: this.userPreferences.plays,
-                            likes: Array.from(this.userPreferences.likes),
-                            dislikes: Array.from(this.userPreferences.dislikes),
-                            genreScores: this.userPreferences.genreScores
-                        },
-                        timestamp: Date.now()
-                    };
-                    localStorage.setItem('iranmix_data', JSON.stringify(dataToSave));
-                    console.log('User data saved successfully');
-                } catch (error) {
-                    console.log('Could not save user data:', error.message);
-                    // Don't throw, just continue
-                }
-            }
+            selectWeightedRandomTrack() {
                 if (this.tracks.length === 0) return null;
+
+                // Simple prevention of same title/singer
+                let availableTracks = this.tracks;
+                if (this.currentTrack) {
+                    availableTracks = this.tracks.filter(track => {
+                        const sameTitle = track.title && this.currentTrack.title && 
+                            track.title.toLowerCase().trim() === this.currentTrack.title.toLowerCase().trim();
+                        const sameSinger = track.singer && this.currentTrack.singer && 
+                            track.singer.toLowerCase().trim() === this.currentTrack.singer.toLowerCase().trim();
+                        return !sameTitle && !sameSinger;
+                    });
+                    
+                    if (availableTracks.length === 0) {
+                        availableTracks = this.tracks;
+                    }
+                }
 
                 // Create weighted list based on genre preferences
                 const weightedTracks = [];
                 
-                this.tracks.forEach(track => {
+                availableTracks.forEach(track => {
                     let weight = 1; // Base weight
                     
                     // Increase weight based on genre scores
                     if (track.genre1 && this.userPreferences.genreScores[track.genre1]) {
-                        weight += Math.max(0, this.userPreferences.genreScores[track.genre1] / 2);
+                        weight += Math.max(0, this.userPreferences.genreScores[track.genre1] / 3);
                     }
                     if (track.genre2 && this.userPreferences.genreScores[track.genre2]) {
-                        weight += Math.max(0, this.userPreferences.genreScores[track.genre2] / 2);
+                        weight += Math.max(0, this.userPreferences.genreScores[track.genre2] / 3);
                     }
                     
                     // Add track multiple times based on weight
@@ -542,14 +483,12 @@ In Claude.ai artifacts, data resets on refresh due to security restrictions.
 
             loadRandomTrack() {
                 if (this.tracks.length === 0) return;
-                
-                // Store previous track to avoid repeats
                 this.previousTrack = this.currentTrack;
-                
                 this.currentTrack = this.selectWeightedRandomTrack();
                 this.updateUI();
                 this.changeTheme();
                 this.updateAudio();
+                
                 // Automatically play the new track if the player was already playing
                 if (this.isPlaying) {
                     this.audio.play().then(() => {
@@ -628,13 +567,11 @@ In Claude.ai artifacts, data resets on refresh due to security restrictions.
 
                 this.audio.addEventListener('ended', () => {
                     this.recordPlay();
-                    // Keep isPlaying as true so next track auto-plays
                     this.loadRandomTrack();
                 });
 
                 this.audio.addEventListener('error', () => {
                     console.error('Audio error, skipping to next track');
-                    // Keep current playing state and try next track
                     this.loadRandomTrack();
                 });
             }
@@ -680,7 +617,7 @@ In Claude.ai artifacts, data resets on refresh due to security restrictions.
                 });
                 
                 this.updateStats();
-                this.saveUserData(); // Save after each play
+                this.saveUserData();
             }
 
             likeTrack() {
@@ -691,14 +628,6 @@ In Claude.ai artifacts, data resets on refresh due to security restrictions.
                 if (this.userPreferences.likes.has(trackId)) {
                     this.userPreferences.likes.delete(trackId);
                     this.stats.liked--;
-                    
-                    // Remove genre boost for unliked track
-                    [this.currentTrack.genre1, this.currentTrack.genre2].forEach(genre => {
-                        if (genre) {
-                            this.userPreferences.genreScores[genre] = 
-                                (this.userPreferences.genreScores[genre] || 0) - 3;
-                        }
-                    });
                 } else {
                     this.userPreferences.likes.add(trackId);
                     this.userPreferences.dislikes.delete(trackId);
@@ -709,14 +638,14 @@ In Claude.ai artifacts, data resets on refresh due to security restrictions.
                     [this.currentTrack.genre1, this.currentTrack.genre2].forEach(genre => {
                         if (genre) {
                             this.userPreferences.genreScores[genre] = 
-                                (this.userPreferences.genreScores[genre] || 0) + 5;
+                                (this.userPreferences.genreScores[genre] || 0) + 3;
                         }
                     });
                 }
                 
                 this.updateUI();
                 this.updateStats();
-                this.saveUserData(); // Save after like/unlike
+                this.saveUserData();
             }
 
             dislikeTrack() {
@@ -727,14 +656,6 @@ In Claude.ai artifacts, data resets on refresh due to security restrictions.
                 if (this.userPreferences.dislikes.has(trackId)) {
                     this.userPreferences.dislikes.delete(trackId);
                     this.stats.disliked--;
-                    
-                    // Remove genre penalty for un-disliked track
-                    [this.currentTrack.genre1, this.currentTrack.genre2].forEach(genre => {
-                        if (genre) {
-                            this.userPreferences.genreScores[genre] = 
-                                (this.userPreferences.genreScores[genre] || 0) + 3;
-                        }
-                    });
                 } else {
                     this.userPreferences.dislikes.add(trackId);
                     this.userPreferences.likes.delete(trackId);
@@ -745,32 +666,26 @@ In Claude.ai artifacts, data resets on refresh due to security restrictions.
                     [this.currentTrack.genre1, this.currentTrack.genre2].forEach(genre => {
                         if (genre) {
                             this.userPreferences.genreScores[genre] = 
-                                (this.userPreferences.genreScores[genre] || 0) - 4;
+                                (this.userPreferences.genreScores[genre] || 0) - 2;
                         }
                     });
                     
                     // Skip to next track while maintaining play state
                     setTimeout(() => {
                         this.audio.pause();
-                        // Keep isPlaying as true so next track auto-plays
                         this.loadRandomTrack();
                     }, 500);
                 }
                 
                 this.updateUI();
                 this.updateStats();
-                this.saveUserData(); // Save after dislike
+                this.saveUserData();
             }
 
             updateStats() {
                 document.getElementById('playedCount').textContent = this.stats.played;
                 document.getElementById('likeCount').textContent = this.stats.liked;
                 document.getElementById('dislikeCount').textContent = this.stats.disliked;
-                
-                // Debug: Log genre scores to console for user to see learning progress
-                if (Object.keys(this.userPreferences.genreScores).length > 0) {
-                    console.log('Genre Preferences:', this.userPreferences.genreScores);
-                }
             }
         }
 
