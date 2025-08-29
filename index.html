@@ -398,22 +398,22 @@
             }
 
             loadRandomTrack() {
-    if (this.tracks.length === 0) return;
-    this.currentTrack = this.selectWeightedRandomTrack();
-    this.updateUI();
-    this.changeTheme();
-    this.updateAudio();
-    // Automatically play the new track if the player was already playing
-    if (this.isPlaying) {
-        this.audio.play().then(() => {
-            this.playBtn.textContent = '⏸️';
-            this.isPlaying = true;
-        }).catch(error => {
-            console.error('Play error:', error);
-            this.loadRandomTrack(); // Retry with another track if playback fails
-        });
-    }
-}
+                if (this.tracks.length === 0) return;
+                this.currentTrack = this.selectWeightedRandomTrack();
+                this.updateUI();
+                this.changeTheme();
+                this.updateAudio();
+                // Automatically play the new track if the player was already playing
+                if (this.isPlaying) {
+                    this.audio.play().then(() => {
+                        this.playBtn.textContent = '⏸️';
+                        this.isPlaying = true;
+                    }).catch(error => {
+                        console.error('Play error:', error);
+                        this.loadRandomTrack(); // Retry with another track if playback fails
+                    });
+                }
+            }
 
             updateUI() {
                 if (!this.currentTrack) return;
@@ -481,12 +481,25 @@
 
                 this.audio.addEventListener('ended', () => {
                     this.recordPlay();
+                    // Keep isPlaying as true so next track auto-plays
                     this.loadRandomTrack();
                 });
 
                 this.audio.addEventListener('error', () => {
                     console.error('Audio error, skipping to next track');
+                    // Keep current playing state and try next track
                     this.loadRandomTrack();
+                });
+            }
+
+            playTrack() {
+                this.audio.play().then(() => {
+                    this.playBtn.textContent = '⏸️';
+                    this.isPlaying = true;
+                }).catch(error => {
+                    console.error('Play error:', error);
+                    this.playBtn.textContent = '▶️';
+                    this.isPlaying = false;
                 });
             }
 
@@ -496,13 +509,7 @@
                     this.playBtn.textContent = '▶️';
                     this.isPlaying = false;
                 } else {
-                    this.audio.play().then(() => {
-                        this.playBtn.textContent = '⏸️';
-                        this.isPlaying = true;
-                    }).catch(error => {
-                        console.error('Play error:', error);
-                        this.loadRandomTrack();
-                    });
+                    this.playTrack();
                 }
             }
 
@@ -577,10 +584,10 @@
                         }
                     });
                     
-                    // Skip to next track
+                    // Skip to next track while maintaining play state
                     setTimeout(() => {
                         this.audio.pause();
-                        this.isPlaying = false;
+                        // Keep isPlaying as true so next track auto-plays
                         this.loadRandomTrack();
                     }, 500);
                 }
