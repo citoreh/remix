@@ -244,6 +244,31 @@
             font-size: 1.1rem;
         }
 
+        /* Connection status indicator */
+        .connection-status {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            z-index: 100;
+            transition: all 0.3s ease;
+        }
+
+        .connection-status.online {
+            background: rgba(34, 197, 94, 0.2);
+            color: #16a34a;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+
+        .connection-status.offline {
+            background: rgba(239, 68, 68, 0.2);
+            color: #dc2626;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
         /* Dynamic theme classes */
         .theme-neon {
             filter: hue-rotate(120deg);
@@ -263,6 +288,10 @@
     </style>
 </head>
 <body>
+    <div class="connection-status offline" id="connectionStatus">
+        🔄 Connecting...
+    </div>
+
     <div class="musical-bg" id="musicalBg"></div>
     
     <div class="stats" id="stats">
@@ -293,7 +322,7 @@
 
             <div class="player-container">
                 <button class="like-btn" id="likeBtn" title="Like">♥</button>
-                <button class="play-button" id="playBtn">▶︎</button>
+                <button class="play-button" id="playBtn">▶️</button>
                 <button class="dislike-btn" id="dislikeBtn" title="Skip">✕</button>
             </div>
 
@@ -337,11 +366,90 @@
                 };
                 this.themes = ['theme-neon', 'theme-sunset', 'theme-ocean', 'theme-purple'];
                 
+                // Dynamic server configuration
+                this.serverUrl = this.getServerUrl();
+                this.userId = this.getUserId();
+                this.isServerAvailable = false;
+                
                 this.initializeElements();
+                this.checkServerConnection();
                 this.loadUserData();
                 this.loadData();
                 this.setupEventListeners();
                 this.createMusicalBackground();
+            }
+
+            // Determine server URL based on environment
+            getServerUrl() {
+                const hostname = window.location.hostname;
+                
+                // Local development
+                if (hostname === 'localhost' || hostname === '127.0.0.1') {
+                    return 'http://localhost:3001';
+                }
+                
+                // Production - Update this with your deployed server URL
+                // Examples:
+                // Railway: https://iranmix-server-production.up.railway.app
+                // Render: https://iranmix-server.onrender.com
+                // Heroku: https://your-iranmix-server.herokuapp.com
+                return 'https://your-iranmix-server.railway.app'; // 👈 UPDATE THIS URL
+            }
+
+            // Check if server is available
+            async checkServerConnection() {
+                try {
+                    const response = await fetch(`${this.serverUrl}/api/health`, {
+                        method: 'GET',
+                        timeout: 5000
+                    });
+                    
+                    if (response.ok) {
+                        this.isServerAvailable = true;
+                        this.updateConnectionStatus('online', 'Server Connected');
+                    } else {
+                        throw new Error('Server not responding');
+                    }
+                } catch (error) {
+                    this.isServerAvailable = false;
+                    this.updateConnectionStatus('offline', 'Offline Mode');
+                    console.log('Server unavailable, using offline mode:', error);
+                }
+            }
+
+            updateConnectionStatus(status, text) {
+                const statusEl = document.getElementById('connectionStatus');
+                statusEl.className = `connection-status ${status}`;
+                statusEl.textContent = status === 'online' ? '🟢 ' + text : '🔴 ' + text;
+            }
+
+            // Generate or retrieve user ID
+            getUserId() {
+                let userId = localStorage.getItem('iranmix_userId');
+                if (!userId) {
+                    const fingerprint = [
+                        screen.width,
+                        screen.height,
+                        new Date().getTimezoneOffset(),
+                        navigator.language,
+                        navigator.platform
+                    ].join('|');
+                    
+                    userId = this.simpleHash(fingerprint);
+                    localStorage.setItem('iranmix_userId', userId);
+                }
+                return userId;
+            }
+
+            // Simple hash function for client-side fingerprinting
+            simpleHash(str) {
+                let hash = 0;
+                for (let i = 0; i < str.length; i++) {
+                    const char = str.charCodeAt(i);
+                    hash = ((hash << 5) - hash) + char;
+                    hash = hash & hash;
+                }
+                return Math.abs(hash).toString(16).substring(0, 16);
             }
 
             initializeElements() {
@@ -358,7 +466,34 @@
                 this.container = document.getElementById('container');
             }
 
-            loadUserData() {
+            // Load user data from server or localStorage
+            async loadUserData() {
+                if (this.isServerAvailable) {
+                    try {
+                        const response = await fetch(`${this.serverUrl}/api/user/${this.userId}`);
+                        if (response.ok) {
+                            const serverData = await response.json();
+                            this.stats = serverData.stats || this.stats;
+                            if (serverData.userPreferences) {
+                                this.userPreferences.plays = serverData.userPreferences.plays || {};
+                                this.userPreferences.likes = new Set(serverData.userPreferences.likes || []);
+                                this.userPreferences.dislikes = new Set(serverData.userPreferences.dislikes || []);
+                                this.userPreferences.genreScores = serverData.userPreferences.genreScores || {};
+                            }
+                            console.log('User data loaded from server');
+                            return;
+                        }
+                    } catch (error) {
+                        console.log('Failed to load from server, using localStorage:', error);
+                    }
+                }
+
+                // Fallback to localStorage
+                this.loadUserDataFromLocalStorage();
+            }
+
+            // Fallback method for localStorage
+            loadUserDataFromLocalStorage() {
                 try {
                     if (typeof(Storage) !== "undefined" && localStorage) {
                         const saved = localStorage.getItem('iranmix_data');
@@ -378,22 +513,82 @@
                 }
             }
 
-            saveUserData() {
+            // Save user data to server and localStorage
+            async saveUserData() {
+                const dataToSave = {
+                    stats: this.stats,
+                    userPreferences: {
+                        plays: this.userPreferences.plays,
+                        likes: Array.from(this.userPreferences.likes),
+                        dislikes: Array.from(this.userPreferences.dislikes),
+                        genreScores: this.userPreferences.genreScores
+                    }
+                };
+
+                // Try to save to server first
+                if (this.isServerAvailable) {
+                    try {
+                        const response = await fetch(`${this.serverUrl}/api/user/${this.userId}`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify(dataToSave)
+                        });
+                        
+                        if (response.ok) {
+                            console.log('Data saved to server successfully');
+                        } else {
+                            throw new Error('Server response not ok');
+                        }
+                    } catch (error) {
+                        console.log('Failed to save to server:', error);
+                        this.isServerAvailable = false;
+                        this.updateConnectionStatus('offline', 'Connection Lost');
+                    }
+                }
+
+                // Always save to localStorage as backup
                 try {
                     if (typeof(Storage) !== "undefined" && localStorage) {
-                        const dataToSave = {
-                            stats: this.stats,
-                            userPreferences: {
-                                plays: this.userPreferences.plays,
-                                likes: Array.from(this.userPreferences.likes),
-                                dislikes: Array.from(this.userPreferences.dislikes),
-                                genreScores: this.userPreferences.genreScores
-                            }
-                        };
                         localStorage.setItem('iranmix_data', JSON.stringify(dataToSave));
                     }
                 } catch (e) {
-                    // Silent fail
+                    console.error('Failed to save to localStorage:', e);
+                }
+            }
+
+            // Log specific action to server
+            async logAction(action, track) {
+                if (!this.isServerAvailable) return;
+
+                try {
+                    const response = await fetch(`${this.serverUrl}/api/user/${this.userId}/action`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            action: action,
+                            track: {
+                                title: track.title,
+                                singer: track.singer,
+                                genre1: track.genre1,
+                                genre2: track.genre2,
+                                mood1: track.mood1,
+                                mood2: track.mood2,
+                                mood3: track.mood3,
+                                prompt: track.prompt,
+                                url: track.url
+                            }
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        console.log(`${action} logged successfully`);
+                    }
+                } catch (error) {
+                    console.log(`Failed to log ${action}:`, error);
                 }
             }
 
@@ -418,7 +613,7 @@
                 
                 for (let i = 1; i < lines.length; i++) {
                     const values = this.parseCSVLine(lines[i]);
-                    if (values.length >= 9 && values[2]) { // Ensure URL exists
+                    if (values.length >= 9 && values[2]) {
                         const track = {};
                         headers.forEach((header, index) => {
                             track[header.toLowerCase()] = values[index] ? values[index].trim().replace(/"/g, '') : '';
@@ -451,7 +646,6 @@
             selectWeightedRandomTrack() {
                 if (this.tracks.length === 0) return null;
 
-                // Simple prevention of same title/singer
                 let availableTracks = this.tracks;
                 if (this.currentTrack) {
                     availableTracks = this.tracks.filter(track => {
@@ -467,13 +661,11 @@
                     }
                 }
 
-                // Create weighted list based on genre preferences
                 const weightedTracks = [];
                 
                 availableTracks.forEach(track => {
-                    let weight = 1; // Base weight
+                    let weight = 1;
                     
-                    // Increase weight based on genre scores
                     if (track.genre1 && this.userPreferences.genreScores[track.genre1]) {
                         weight += Math.max(0, this.userPreferences.genreScores[track.genre1] / 3);
                     }
@@ -481,7 +673,6 @@
                         weight += Math.max(0, this.userPreferences.genreScores[track.genre2] / 3);
                     }
                     
-                    // Add track multiple times based on weight
                     for (let i = 0; i < Math.ceil(weight); i++) {
                         weightedTracks.push(track);
                     }
@@ -498,14 +689,13 @@
                 this.changeTheme();
                 this.updateAudio();
                 
-                // Automatically play the new track if the player was already playing
                 if (this.isPlaying) {
                     this.audio.play().then(() => {
-                        this.playBtn.textContent = '⏸︎';
+                        this.playBtn.textContent = '⏸️';
                         this.isPlaying = true;
                     }).catch(error => {
                         console.error('Play error:', error);
-                        this.loadRandomTrack(); // Retry with another track if playback fails
+                        this.loadRandomTrack();
                     });
                 }
             }
@@ -526,7 +716,6 @@
                 
                 this.prompt.textContent = this.currentTrack.prompt || 'No description available';
 
-                // Update like/dislike button states
                 const trackId = this.getTrackId(this.currentTrack);
                 this.likeBtn.style.opacity = this.userPreferences.likes.has(trackId) ? '1' : '0.6';
                 this.dislikeBtn.style.opacity = this.userPreferences.dislikes.has(trackId) ? '1' : '0.6';
@@ -539,12 +728,10 @@
             }
 
             changeTheme() {
-                // Remove existing theme
                 this.themes.forEach(theme => {
                     document.body.classList.remove(theme);
                 });
                 
-                // Add random new theme
                 const randomTheme = this.themes[Math.floor(Math.random() * this.themes.length)];
                 document.body.classList.add(randomTheme);
             }
@@ -587,11 +774,11 @@
 
             playTrack() {
                 this.audio.play().then(() => {
-                    this.playBtn.textContent = '⏸︎';
+                    this.playBtn.textContent = '⏸️';
                     this.isPlaying = true;
                 }).catch(error => {
                     console.error('Play error:', error);
-                    this.playBtn.textContent = '▶︎';
+                    this.playBtn.textContent = '▶️';
                     this.isPlaying = false;
                 });
             }
@@ -599,7 +786,7 @@
             togglePlay() {
                 if (this.isPlaying) {
                     this.audio.pause();
-                    this.playBtn.textContent = '▶︎';
+                    this.playBtn.textContent = '▶️';
                     this.isPlaying = false;
                 } else {
                     this.playTrack();
@@ -610,14 +797,13 @@
                 return track.title + '_' + track.singer;
             }
 
-            recordPlay() {
+            async recordPlay() {
                 if (!this.currentTrack) return;
                 
                 const trackId = this.getTrackId(this.currentTrack);
                 this.userPreferences.plays[trackId] = (this.userPreferences.plays[trackId] || 0) + 2;
                 this.stats.played++;
                 
-                // Update genre scores
                 [this.currentTrack.genre1, this.currentTrack.genre2].forEach(genre => {
                     if (genre) {
                         this.userPreferences.genreScores[genre] = 
@@ -625,11 +811,14 @@
                     }
                 });
                 
+                // Log to server
+                await this.logAction('play', this.currentTrack);
+                
                 this.updateStats();
                 this.saveUserData();
             }
 
-            likeTrack() {
+            async likeTrack() {
                 if (!this.currentTrack) return;
                 
                 const trackId = this.getTrackId(this.currentTrack);
@@ -643,13 +832,15 @@
                     this.stats.liked++;
                     if (this.stats.disliked > 0) this.stats.disliked--;
                     
-                    // Boost genre scores for liked tracks
                     [this.currentTrack.genre1, this.currentTrack.genre2].forEach(genre => {
                         if (genre) {
                             this.userPreferences.genreScores[genre] = 
                                 (this.userPreferences.genreScores[genre] || 0) + 3;
                         }
                     });
+                    
+                    // Log to server
+                    await this.logAction('like', this.currentTrack);
                 }
                 
                 this.updateUI();
@@ -657,7 +848,7 @@
                 this.saveUserData();
             }
 
-            dislikeTrack() {
+            async dislikeTrack() {
                 if (!this.currentTrack) return;
                 
                 const trackId = this.getTrackId(this.currentTrack);
@@ -671,7 +862,6 @@
                     this.stats.disliked++;
                     if (this.stats.liked > 0) this.stats.liked--;
                     
-                    // Reduce genre scores for disliked tracks and skip to next
                     [this.currentTrack.genre1, this.currentTrack.genre2].forEach(genre => {
                         if (genre) {
                             this.userPreferences.genreScores[genre] = 
@@ -679,7 +869,9 @@
                         }
                     });
                     
-                    // Skip to next track while maintaining play state
+                    // Log to server
+                    await this.logAction('skip', this.currentTrack);
+                    
                     setTimeout(() => {
                         this.audio.pause();
                         this.loadRandomTrack();
