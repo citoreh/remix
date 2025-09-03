@@ -13,16 +13,63 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #f5f5f7;
-            color: #1d1d1f;
-            line-height: 1.6;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
         }
 
         .header {
-            background: white;
-            padding: 1rem 2rem;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1.5rem 0;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
             margin-bottom: 2rem;
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 2rem;
+            font-weight: bold;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .connection-status.online {
+            background: rgba(34, 197, 94, 0.2);
+            color: #059669;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+
+        .connection-status.offline {
+            background: rgba(239, 68, 68, 0.2);
+            color: #dc2626;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .connection-status.loading {
+            background: rgba(59, 130, 246, 0.2);
+            color: #2563eb;
+            border: 1px solid rgba(59, 130, 246, 0.3);
         }
 
         .container {
@@ -33,310 +80,665 @@
 
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1rem;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
             margin-bottom: 2rem;
         }
 
         .stat-card {
-            background: white;
-            padding: 1.5rem;
-            border-radius: 12px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: transform 0.2s ease;
         }
 
+        .stat-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .stat-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: white;
+        }
+
+        .stat-icon.plays { background: linear-gradient(45deg, #667eea, #764ba2); }
+        .stat-icon.likes { background: linear-gradient(45deg, #f093fb, #f5576c); }
+        .stat-icon.skips { background: linear-gradient(45deg, #4facfe, #00f2fe); }
+        .stat-icon.users { background: linear-gradient(45deg, #43e97b, #38f9d7); }
+
         .stat-number {
-            font-size: 2rem;
+            font-size: 2.5rem;
             font-weight: bold;
-            color: #007AFF;
+            color: #1f2937;
             margin-bottom: 0.5rem;
         }
 
         .stat-label {
-            color: #666;
+            color: #6b7280;
             font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
-        .user-selector {
+        .control-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1.5rem;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
             margin-bottom: 2rem;
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
         }
 
         .user-selector select {
             padding: 0.75rem;
-            border: 1px solid #d1d1d6;
+            border: 1px solid #d1d5db;
             border-radius: 8px;
             font-size: 1rem;
             background: white;
             min-width: 200px;
+            color: #374151;
+        }
+
+        .refresh-btn, .export-btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .refresh-btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .refresh-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .export-btn {
+            background: linear-gradient(45deg, #f093fb, #f5576c);
+            color: white;
+        }
+
+        .export-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(240, 147, 251, 0.4);
         }
 
         .tabs {
             display: flex;
-            background: white;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
             border-radius: 12px;
             padding: 0.5rem;
-            margin-bottom: 1rem;
+            margin-bottom: 1.5rem;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
         .tab {
             flex: 1;
-            padding: 0.75rem 1rem;
+            padding: 1rem;
             text-align: center;
             background: none;
             border: none;
             border-radius: 8px;
             cursor: pointer;
             font-size: 0.9rem;
-            color: #666;
+            color: #6b7280;
             transition: all 0.2s;
+            font-weight: 500;
         }
 
         .tab.active {
-            background: #007AFF;
+            background: linear-gradient(45deg, #667eea, #764ba2);
             color: white;
+            transform: translateY(-1px);
         }
 
         .content-area {
-            background: white;
-            border-radius: 12px;
-            padding: 1.5rem;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            min-height: 400px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            min-height: 500px;
         }
 
         .song-list {
             display: grid;
-            gap: 0.75rem;
+            gap: 1rem;
         }
 
         .song-item {
             display: grid;
-            grid-template-columns: auto 1fr auto;
+            grid-template-columns: auto 1fr auto auto;
             align-items: center;
-            padding: 0.75rem;
-            background: #f8f9fa;
-            border-radius: 8px;
+            padding: 1rem;
+            background: rgba(248, 250, 252, 0.8);
+            border-radius: 12px;
             gap: 1rem;
+            border: 1px solid rgba(226, 232, 240, 0.5);
+            transition: all 0.2s ease;
+        }
+
+        .song-item:hover {
+            background: rgba(241, 245, 249, 0.9);
+            transform: translateY(-1px);
+        }
+
+        .song-index {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.9rem;
         }
 
         .song-info h3 {
-            font-size: 1rem;
+            font-size: 1.1rem;
             margin-bottom: 0.25rem;
+            color: #1f2937;
         }
 
         .song-info p {
-            font-size: 0.85rem;
-            color: #666;
+            font-size: 0.9rem;
+            color: #6b7280;
+        }
+
+        .song-genre {
+            padding: 0.25rem 0.75rem;
+            background: rgba(99, 102, 241, 0.1);
+            color: #6366f1;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
         }
 
         .song-timestamp {
-            font-size: 0.8rem;
-            color: #999;
+            font-size: 0.85rem;
+            color: #9ca3af;
             white-space: nowrap;
+            text-align: right;
         }
 
-        .loading {
+        .loading, .empty, .error {
             text-align: center;
-            padding: 2rem;
-            color: #666;
+            padding: 3rem;
+            color: #6b7280;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #e5e7eb;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            color: #ef4444;
         }
 
         .empty {
-            text-align: center;
-            padding: 2rem;
-            color: #999;
+            color: #9ca3af;
         }
 
-        .refresh-btn {
-            background: #007AFF;
-            color: white;
-            border: none;
-            padding: 0.75rem 1.5rem;
+        .server-info {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            color: #1e40af;
+            padding: 1rem;
             border-radius: 8px;
-            cursor: pointer;
+            margin-bottom: 1rem;
             font-size: 0.9rem;
-            margin-left: 1rem;
         }
 
-        .refresh-btn:hover {
-            background: #0056CC;
+        @media (max-width: 768px) {
+            .control-panel {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .song-item {
+                grid-template-columns: auto 1fr;
+                gap: 0.75rem;
+            }
+
+            .song-genre, .song-timestamp {
+                grid-column: 2;
+                justify-self: start;
+                margin-top: 0.5rem;
+            }
         }
     </style>
 </head>
 <body>
     <div class="header">
-        <div class="container">
-            <h1>IranMix Admin Dashboard</h1>
+        <div class="header-content">
+            <div class="logo">🎵 IranMix Admin</div>
+            <div class="connection-status loading" id="connectionStatus">
+                <div class="loading-spinner"></div>
+                Connecting...
+            </div>
         </div>
     </div>
 
     <div class="container">
+        <div class="server-info" id="serverInfo">
+            <strong>🔗 Server URL:</strong> <span id="serverUrl">Detecting...</span>
+        </div>
+
         <div class="stats-grid" id="statsGrid">
             <div class="stat-card">
+                <div class="stat-header">
+                    <div class="stat-icon users">👥</div>
+                </div>
                 <div class="stat-number" id="totalUsers">-</div>
-                <div class="stat-label">Total Users</div>
+                <div class="stat-label">Active Users</div>
             </div>
             <div class="stat-card">
+                <div class="stat-header">
+                    <div class="stat-icon plays">▶️</div>
+                </div>
                 <div class="stat-number" id="totalPlays">-</div>
                 <div class="stat-label">Total Plays</div>
             </div>
             <div class="stat-card">
+                <div class="stat-header">
+                    <div class="stat-icon likes">❤️</div>
+                </div>
                 <div class="stat-number" id="totalLikes">-</div>
                 <div class="stat-label">Total Likes</div>
             </div>
             <div class="stat-card">
+                <div class="stat-header">
+                    <div class="stat-icon skips">⏭️</div>
+                </div>
                 <div class="stat-number" id="totalSkips">-</div>
                 <div class="stat-label">Total Skips</div>
             </div>
         </div>
 
-        <div class="user-selector">
-            <label for="userSelect">Select User:</label>
+        <div class="control-panel">
+            <label for="userSelect">👤 Select User:</label>
             <select id="userSelect">
-                <option value="">Select a user...</option>
+                <option value="">Loading users...</option>
             </select>
-            <button class="refresh-btn" onclick="loadAllData()">Refresh Data</button>
+            <button class="refresh-btn" onclick="loadAllData()">🔄 Refresh</button>
+            <button class="export-btn" onclick="exportData()">📊 Export Data</button>
         </div>
 
         <div class="tabs">
-            <button class="tab active" onclick="showTab('played')">Played Songs</button>
-            <button class="tab" onclick="showTab('liked')">Liked Songs</button>
-            <button class="tab" onclick="showTab('skipped')">Skipped Songs</button>
+            <button class="tab active" onclick="showTab('played')" data-tab="played">
+                ▶️ Played Songs (<span id="playedCount">0</span>)
+            </button>
+            <button class="tab" onclick="showTab('liked')" data-tab="liked">
+                ❤️ Liked Songs (<span id="likedCount">0</span>)
+            </button>
+            <button class="tab" onclick="showTab('skipped')" data-tab="skipped">
+                ⏭️ Skipped Songs (<span id="skippedCount">0</span>)
+            </button>
         </div>
 
         <div class="content-area">
             <div id="songContent" class="loading">
-                Select a user to view their song history
+                <div class="loading-spinner"></div>
+                Initializing dashboard...
             </div>
         </div>
     </div>
 
     <script>
-        const SERVER_URL = 'https://remix-production-fc7f.up.railway.app';
-        let currentUser = '';
-        let currentTab = 'played';
-        let userData = {};
-
-        async function loadAllData() {
-            try {
-                // Load user list (you might need to add an endpoint for this)
-                await loadUserList();
-                updateGlobalStats();
-            } catch (error) {
-                console.error('Error loading data:', error);
+        class IranMixAdmin {
+            constructor() {
+                this.SERVER_URL = this.detectServerUrl();
+                this.currentUser = '';
+                this.currentTab = 'played';
+                this.userData = {};
+                this.allUsers = [];
+                this.isServerOnline = false;
+                
+                this.init();
             }
-        }
 
-        async function loadUserList() {
-            // For now, we'll populate users as they're selected
-            // In a real implementation, you might want an endpoint that lists all users
-            const userSelect = document.getElementById('userSelect');
-            
-            // Add some sample user IDs for demonstration
-            // In production, you'd get this from a proper endpoint
-            const sampleUsers = ['47b77d79'];
-            
-            userSelect.innerHTML = '<option value="">Select a user...</option>';
-            sampleUsers.forEach(userId => {
-                const option = document.createElement('option');
-                option.value = userId;
-                option.textContent = `User ${userId}`;
-                userSelect.appendChild(option);
-            });
-        }
-
-        async function loadUserData(userId) {
-            if (!userId) return;
-
-            try {
-                const response = await fetch(`${SERVER_URL}/api/user/${userId}/lists`);
-                if (response.ok) {
-                    userData = await response.json();
-                    showCurrentTab();
-                } else {
-                    document.getElementById('songContent').innerHTML = 
-                        '<div class="empty">No data found for this user</div>';
+            // Automatically detect server URL
+            detectServerUrl() {
+                const hostname = window.location.hostname;
+                
+                if (hostname === 'localhost' || hostname === '127.0.0.1') {
+                    return 'http://localhost:3001';
                 }
-            } catch (error) {
-                console.error('Error loading user data:', error);
+                
+                // Try to get server URL from localStorage (set by main app)
+                const savedServerUrl = localStorage.getItem('iranmix_serverUrl');
+                if (savedServerUrl) {
+                    return savedServerUrl;
+                }
+                
+                // Default - you can update this with your Railway URL
+                return 'https://remix-production-fc7f.up.railway.app';
+            }
+
+            async init() {
+                document.getElementById('serverUrl').textContent = this.SERVER_URL;
+                await this.checkServerConnection();
+                if (this.isServerOnline) {
+                    await this.loadAllData();
+                }
+            }
+
+            async checkServerConnection() {
+                try {
+                    const response = await fetch(`${this.SERVER_URL}/api/health`, {
+                        method: 'GET',
+                        timeout: 5000
+                    });
+                    
+                    if (response.ok) {
+                        this.isServerOnline = true;
+                        this.updateConnectionStatus('online', '🟢 Server Online');
+                    } else {
+                        throw new Error('Server not responding');
+                    }
+                } catch (error) {
+                    this.isServerOnline = false;
+                    this.updateConnectionStatus('offline', '🔴 Server Offline');
+                    console.error('Server connection failed:', error);
+                }
+            }
+
+            updateConnectionStatus(status, text) {
+                const statusEl = document.getElementById('connectionStatus');
+                statusEl.className = `connection-status ${status}`;
+                statusEl.innerHTML = text;
+            }
+
+            async loadAllData() {
+                if (!this.isServerOnline) {
+                    document.getElementById('songContent').innerHTML = 
+                        '<div class="error">❌ Cannot connect to server</div>';
+                    return;
+                }
+
+                try {
+                    // Load available users by checking localStorage and making intelligent guesses
+                    await this.loadUserList();
+                    
+                    // Update global stats
+                    this.updateGlobalStats();
+                    
+                    if (this.allUsers.length === 0) {
+                        document.getElementById('songContent').innerHTML = 
+                            '<div class="empty">📭 No users found. Use the music player first to generate data!</div>';
+                    }
+                } catch (error) {
+                    console.error('Error loading data:', error);
+                    document.getElementById('songContent').innerHTML = 
+                        '<div class="error">❌ Error loading data: ' + error.message + '</div>';
+                }
+            }
+
+            async loadUserList() {
+                const userSelect = document.getElementById('userSelect');
+                userSelect.innerHTML = '<option value="">Select a user...</option>';
+                
+                // Get current user ID from localStorage
+                const currentUserId = localStorage.getItem('iranmix_userId');
+                
+                // Try to get user data to verify server has data
+                if (currentUserId) {
+                    try {
+                        const response = await fetch(`${this.SERVER_URL}/api/user/${currentUserId}/lists`);
+                        if (response.ok) {
+                            const userData = await response.json();
+                            
+                            // Only add user if they have actual data
+                            if (userData.played?.length > 0 || userData.liked?.length > 0 || userData.skipped?.length > 0) {
+                                this.allUsers.push({
+                                    id: currentUserId,
+                                    label: `User ${currentUserId.substring(0, 8)}... (You)`,
+                                    isCurrentUser: true
+                                });
+                            }
+                        }
+                    } catch (error) {
+                        console.log('Could not load user data:', error);
+                    }
+                }
+
+                // Add demo users if no real users found (for testing)
+                if (this.allUsers.length === 0) {
+                    this.allUsers.push({
+                        id: 'demo',
+                        label: '🎵 Generate some data first!',
+                        isDemo: true
+                    });
+                }
+
+                // Populate select dropdown
+                this.allUsers.forEach(user => {
+                    const option = document.createElement('option');
+                    option.value = user.id;
+                    option.textContent = user.label;
+                    if (user.isCurrentUser) option.selected = true;
+                    userSelect.appendChild(option);
+                });
+
+                // Auto-select first real user
+                if (this.allUsers.length > 0 && !this.allUsers[0].isDemo) {
+                    this.currentUser = this.allUsers[0].id;
+                    userSelect.value = this.currentUser;
+                    await this.loadUserData(this.currentUser);
+                }
+            }
+
+            async loadUserData(userId) {
+                if (!userId || userId === 'demo') {
+                    document.getElementById('songContent').innerHTML = 
+                        '<div class="empty">🎵 Use the music player to generate data first!<br><br>Play some songs, like them, skip them, then come back here to see the analytics.</div>';
+                    return;
+                }
+
                 document.getElementById('songContent').innerHTML = 
-                    '<div class="empty">Error loading user data</div>';
+                    '<div class="loading"><div class="loading-spinner"></div>Loading user data...</div>';
+
+                try {
+                    const response = await fetch(`${this.SERVER_URL}/api/user/${userId}/lists`);
+                    if (response.ok) {
+                        this.userData = await response.json();
+                        
+                        // Update tab counts
+                        document.getElementById('playedCount').textContent = this.userData.played?.length || 0;
+                        document.getElementById('likedCount').textContent = this.userData.liked?.length || 0;
+                        document.getElementById('skippedCount').textContent = this.userData.skipped?.length || 0;
+                        
+                        this.showCurrentTab();
+                    } else {
+                        throw new Error('User not found');
+                    }
+                } catch (error) {
+                    console.error('Error loading user data:', error);
+                    document.getElementById('songContent').innerHTML = 
+                        '<div class="error">❌ Error loading user data: ' + error.message + '</div>';
+                }
             }
-        }
 
-        function showTab(tab) {
-            currentTab = tab;
-            
-            // Update tab buttons
-            document.querySelectorAll('.tab').forEach(t => {
-                t.classList.remove('active');
-            });
-            event.target.classList.add('active');
-            
-            showCurrentTab();
-        }
-
-        function showCurrentTab() {
-            const contentArea = document.getElementById('songContent');
-            
-            if (!userData[currentTab] || userData[currentTab].length === 0) {
-                contentArea.innerHTML = `<div class="empty">No ${currentTab} songs yet</div>`;
-                return;
+            showTab(tab) {
+                this.currentTab = tab;
+                
+                // Update tab buttons
+                document.querySelectorAll('.tab').forEach(t => {
+                    t.classList.remove('active');
+                });
+                document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+                
+                this.showCurrentTab();
             }
 
-            const songs = userData[currentTab].sort((a, b) => 
-                new Date(b.timestamp) - new Date(a.timestamp)
-            );
+            showCurrentTab() {
+                const contentArea = document.getElementById('songContent');
+                
+                if (!this.userData[this.currentTab] || this.userData[this.currentTab].length === 0) {
+                    const tabNames = {
+                        played: 'played',
+                        liked: 'liked', 
+                        skipped: 'skipped'
+                    };
+                    contentArea.innerHTML = `<div class="empty">📭 No ${tabNames[this.currentTab]} songs yet</div>`;
+                    return;
+                }
 
-            contentArea.innerHTML = `
-                <div class="song-list">
-                    ${songs.map(song => `
-                        <div class="song-item">
-                            <div class="song-info">
-                                <h3>${song.title || 'Unknown Title'}</h3>
-                                <p>${song.singer || 'Unknown Artist'} • ${song.genre1 || 'Unknown Genre'}</p>
+                const songs = this.userData[this.currentTab].sort((a, b) => 
+                    new Date(b.timestamp) - new Date(a.timestamp)
+                );
+
+                contentArea.innerHTML = `
+                    <div class="song-list">
+                        ${songs.map((song, index) => `
+                            <div class="song-item">
+                                <div class="song-index">${index + 1}</div>
+                                <div class="song-info">
+                                    <h3>${song.title || 'Unknown Title'}</h3>
+                                    <p>${song.singer || 'Unknown Artist'}</p>
+                                </div>
+                                <div class="song-genre">${song.genre1 || 'Unknown'}</div>
+                                <div class="song-timestamp">
+                                    ${this.formatTimestamp(song.timestamp)}
+                                </div>
                             </div>
-                            <div class="song-timestamp">
-                                ${formatTimestamp(song.timestamp)}
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-            `;
-        }
+                        `).join('')}
+                    </div>
+                `;
+            }
 
-        function formatTimestamp(timestamp) {
-            const date = new Date(timestamp);
-            return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-        }
+            formatTimestamp(timestamp) {
+                const date = new Date(timestamp);
+                const now = new Date();
+                const diff = now - date;
+                
+                // Show relative time for recent items
+                if (diff < 60000) return 'Just now';
+                if (diff < 3600000) return Math.floor(diff / 60000) + 'm ago';
+                if (diff < 86400000) return Math.floor(diff / 3600000) + 'h ago';
+                
+                // Show actual date for older items
+                return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            }
 
-        function updateGlobalStats() {
-            // This would be implemented with a proper analytics endpoint
-            // For now, showing placeholder data
-            document.getElementById('totalUsers').textContent = '12';
-            document.getElementById('totalPlays').textContent = '1,247';
-            document.getElementById('totalLikes').textContent = '423';
-            document.getElementById('totalSkips').textContent = '156';
+            updateGlobalStats() {
+                // Calculate stats from current user data
+                let totalPlays = 0, totalLikes = 0, totalSkips = 0;
+                
+                if (this.userData.played) totalPlays = this.userData.played.length;
+                if (this.userData.liked) totalLikes = this.userData.liked.length;
+                if (this.userData.skipped) totalSkips = this.userData.skipped.length;
+                
+                document.getElementById('totalUsers').textContent = this.allUsers.filter(u => !u.isDemo).length;
+                document.getElementById('totalPlays').textContent = totalPlays.toLocaleString();
+                document.getElementById('totalLikes').textContent = totalLikes.toLocaleString();
+                document.getElementById('totalSkips').textContent = totalSkips.toLocaleString();
+            }
+
+            async exportData() {
+                if (!this.currentUser || this.currentUser === 'demo') {
+                    alert('Please select a user first!');
+                    return;
+                }
+
+                try {
+                    const data = {
+                        user: this.currentUser,
+                        exported: new Date().toISOString(),
+                        data: this.userData
+                    };
+                    
+                    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `iranmix-data-${this.currentUser.substring(0, 8)}-${new Date().toISOString().split('T')[0]}.json`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                } catch (error) {
+                    alert('Error exporting data: ' + error.message);
+                }
+            }
         }
 
         // Event listeners
         document.getElementById('userSelect').addEventListener('change', (e) => {
-            currentUser = e.target.value;
-            if (currentUser) {
-                loadUserData(currentUser);
-            } else {
-                document.getElementById('songContent').innerHTML = 
-                    '<div class="loading">Select a user to view their song history</div>';
+            admin.currentUser = e.target.value;
+            if (admin.currentUser) {
+                admin.loadUserData(admin.currentUser);
             }
         });
 
-        // Initialize
+        // Global functions for buttons
+        function showTab(tab) {
+            admin.showTab(tab);
+        }
+
+        function loadAllData() {
+            admin.loadAllData();
+        }
+
+        function exportData() {
+            admin.exportData();
+        }
+
+        // Initialize admin dashboard
+        let admin;
         window.addEventListener('DOMContentLoaded', () => {
-            loadAllData();
+            admin = new IranMixAdmin();
         });
     </script>
 </body>
