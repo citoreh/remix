@@ -380,22 +380,16 @@
             }
 
             // Determine server URL based on environment
-            getServerUrl() {
-                const hostname = window.location.hostname;
-                
-                // Local development
-                if (hostname === 'localhost' || hostname === '127.0.0.1') {
-                    return 'http://localhost:3001';
-                }
-                
-                // Production - Update this with your deployed server URL
-                // Examples:
-                // Railway: https://iranmix-server-production.up.railway.app
-                // Render: https://iranmix-server.onrender.com
-                // Heroku: https://your-iranmix-server.herokuapp.com
-                return 'https://remix-production-fc7f.up.railway.app'; // 👈 UPDATE THIS URL
-            }
-
+           getServerUrl() {
+    const hostname = window.location.hostname;
+    
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+        return 'http://localhost:3001';
+    }
+    
+    // UPDATE THIS LINE:
+    return 'https://remix-production-fc7f.up.railway.app';
+}
             // Check if server is available
             async checkServerConnection() {
                 try {
