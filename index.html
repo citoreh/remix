@@ -783,10 +783,11 @@
             }
 
             async callAnthropicAPI(playlistRequest) {
-                // Since we can't make direct API calls from the browser due to CORS,
-                // we'll use the server as a proxy
+                // Check if server is available for proxy
                 if (!this.isServerAvailable) {
-                    throw new Error('Server connection required for AI features');
+                    // Fallback: Create a simple rule-based playlist
+                    this.debug('📡 Server unavailable, creating rule-based playlist');
+                    return this.createRuleBasedPlaylist(playlistRequest);
                 }
 
                 const response = await fetch(`${this.serverUrl}/api/generate-playlist`, {
@@ -805,6 +806,66 @@
                 }
 
                 return await response.json();
+            }
+
+            createRuleBasedPlaylist(playlistRequest) {
+                const { timeContext, userPreferences, availableTracks, requestedLength } = playlistRequest;
+                
+                // Simple algorithm based on time and preferences
+                let filteredTracks = [...availableTracks];
+                
+                // Filter by time of day preferences
+                if (timeContext.hour >= 6 && timeContext.hour < 12) {
+                    // Morning: prefer energetic tracks
+                    filteredTracks = filteredTracks.filter(track => 
+                        track.mood1?.toLowerCase().includes('energy') ||
+                        track.mood2?.toLowerCase().includes('upbeat') ||
+                        track.genre1?.toLowerCase().includes('pop')
+                    );
+                } else if (timeContext.hour >= 18 || timeContext.hour < 6) {
+                    // Evening/Night: prefer calm tracks
+                    filteredTracks = filteredTracks.filter(track => 
+                        track.mood1?.toLowerCase().includes('calm') ||
+                        track.mood2?.toLowerCase().includes('relax') ||
+                        track.mood3?.toLowerCase().includes('chill')
+                    );
+                }
+                
+                // If filtering removed too many, use all tracks
+                if (filteredTracks.length < requestedLength) {
+                    filteredTracks = availableTracks;
+                }
+                
+                // Prefer liked genres
+                const topGenres = Object.entries(userPreferences.genreScores || {})
+                    .sort(([,a], [,b]) => b - a)
+                    .slice(0, 3)
+                    .map(([genre]) => genre);
+                
+                filteredTracks.sort((a, b) => {
+                    let scoreA = 0, scoreB = 0;
+                    
+                    if (topGenres.includes(a.genre1) || topGenres.includes(a.genre2)) scoreA += 2;
+                    if (topGenres.includes(b.genre1) || topGenres.includes(b.genre2)) scoreB += 2;
+                    
+                    if (userPreferences.likes.has(this.getTrackId({title: a.title, singer: a.singer}))) scoreA += 3;
+                    if (userPreferences.likes.has(this.getTrackId({title: b.title, singer: b.singer}))) scoreB += 3;
+                    
+                    return scoreB - scoreA;
+                });
+                
+                const selectedTracks = filteredTracks
+                    .slice(0, requestedLength)
+                    .map(track => ({
+                        id: track.id,
+                        reason: "Selected based on time and preferences"
+                    }));
+                
+                return {
+                    title: `${timeContext.timeOfDay} Mix`,
+                    description: `A ${timeContext.timeOfDay.toLowerCase()} playlist curated based on your preferences and current mood: ${timeContext.mood}`,
+                    playlist: selectedTracks
+                };
             }
 
             setCurrentPlaylist(aiResponse) {
