@@ -224,10 +224,9 @@ function getRecentActivity(history) {
 // Initialize server
 async function startServer() {
     await ensureDataDir();
-    app.listen(PORT, () => {
-        console.log(`IranMix server running on port ${PORT}`);
-        console.log(`User data will be stored in: ${path.resolve(DATA_DIR)}`);
-    });
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`IranMix server running on port ${PORT}`);
+});
 }
 
 startServer().catch(console.error);
