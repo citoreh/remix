@@ -1,0 +1,1612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Q4WCFNWNF1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Q4WCFNWNF1');
+</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IranMix - AI-Powered Music Player</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            overflow-x: hidden;
+            position: relative;
+            padding-bottom: 80px;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .musical-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .note {
+            position: absolute;
+            font-size: 2rem;
+            opacity: 0.1;
+            animation: float 8s infinite ease-in-out;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.1; }
+            50% { transform: translateY(-50px) rotate(180deg); opacity: 0.3; }
+        }
+
+        .container {
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(20px);
+            border-radius: 30px;
+            padding: 3rem;
+            text-align: center;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+            z-index: 10;
+            position: relative;
+            max-width: 600px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            width: 90%;
+        }
+
+        .logo {
+            font-size: 3rem;
+            font-weight: bold;
+            margin-bottom: 2rem;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: textShimmer 3s ease-in-out infinite;
+        }
+
+        @keyframes textShimmer {
+            0%, 100% { filter: hue-rotate(0deg); }
+            50% { filter: hue-rotate(90deg); }
+        }
+
+        .ai-badge {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            padding: 0.3rem 0.8rem;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            margin-bottom: 1rem;
+            display: inline-block;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .playlist-controls {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .playlist-btn {
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: 20px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .playlist-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .playlist-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .current-playlist {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1rem;
+            border-radius: 15px;
+            margin-bottom: 2rem;
+            text-align: left;
+        }
+
+        .playlist-title {
+            font-weight: bold;
+            color: #ffd700;
+            margin-bottom: 0.5rem;
+        }
+
+        .playlist-description {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            margin-bottom: 1rem;
+        }
+
+        .playlist-tracks {
+            max-height: 150px;
+            overflow-y: auto;
+            font-size: 0.8rem;
+        }
+
+        .playlist-track {
+            padding: 0.3rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .playlist-track.current {
+            background: rgba(255, 215, 0, 0.2);
+            color: #ffd700;
+            font-weight: bold;
+        }
+
+        .track-info {
+            margin-bottom: 2rem;
+        }
+
+        .title {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .singer {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 1.5rem;
+        }
+
+        .time-context {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0.8rem;
+            border-radius: 15px;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+        }
+
+        .player-container {
+            margin: 2rem 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .play-button {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: none;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            color: white;
+            font-size: 1.8rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+        }
+
+        .play-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .play-button:active {
+            transform: scale(0.95);
+        }
+
+        .like-btn, .dislike-btn, .next-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            font-size: 1.3rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+        }
+
+        .like-btn {
+            background: linear-gradient(45deg, #ff9a9e, #fecfef);
+            color: #d63384;
+        }
+
+        .dislike-btn {
+            background: linear-gradient(45deg, #a8edea, #fed6e3);
+            color: #6c757d;
+        }
+
+        .next-btn {
+            background: linear-gradient(45deg, #ffeaa7, #fab1a0);
+            color: #e17055;
+        }
+
+        .like-btn:hover, .dislike-btn:hover, .next-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .metadata {
+            margin-top: 2rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            text-align: left;
+        }
+
+        .metadata-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1rem;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        .metadata-label {
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            color: #ffd700;
+        }
+
+        .prompt {
+            grid-column: 1 / -1;
+            margin-top: 1rem;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        .loading {
+            font-size: 1.2rem;
+            opacity: 0.8;
+            padding: 2rem;
+        }
+
+        .error {
+            background: rgba(220, 38, 38, 0.2);
+            border: 1px solid rgba(220, 38, 38, 0.3);
+            border-radius: 15px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            color: #fca5a5;
+        }
+
+        .success {
+            background: rgba(34, 197, 94, 0.2);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            border-radius: 15px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            color: #86efac;
+        }
+
+        .stats {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(15px);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            font-size: 0.9rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 10;
+        }
+
+        @media (max-width: 768px) {
+            .stats {
+                gap: 1rem;
+                padding: 0.75rem 1rem;
+                font-size: 0.8rem;
+            }
+            
+            .container {
+                padding: 2rem 1rem;
+                margin: 1rem;
+            }
+            
+            .metadata {
+                grid-template-columns: 1fr;
+            }
+
+            .playlist-controls {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            opacity: 0.9;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+        }
+
+        .stat-icon {
+            font-size: 1.1rem;
+        }
+
+        .connection-status {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            z-index: 100;
+            transition: all 0.3s ease;
+        }
+
+        .connection-status.online {
+            background: rgba(34, 197, 94, 0.2);
+            color: #16a34a;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+
+        .connection-status.offline {
+            background: rgba(239, 68, 68, 0.2);
+            color: #dc2626;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .connection-status.connecting {
+            background: rgba(245, 158, 11, 0.2);
+            color: #d97706;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .debug-info {
+            position: fixed;
+            bottom: 100px;
+            left: 1rem;
+            background: rgba(0, 0, 0, 0.8);
+            color: #10b981;
+            font-family: 'Courier New', monospace;
+            font-size: 0.7rem;
+            padding: 0.5rem;
+            border-radius: 5px;
+            max-width: 300px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 100;
+            display: none;
+        }
+
+        /* Theme classes */
+        .theme-neon { filter: hue-rotate(120deg); }
+        .theme-sunset { filter: hue-rotate(30deg); }
+        .theme-ocean { filter: hue-rotate(200deg); }
+        .theme-purple { filter: hue-rotate(270deg); }
+
+        .api-status {
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            z-index: 100;
+            transition: all 0.3s ease;
+            background: rgba(102, 126, 234, 0.2);
+            color: #667eea;
+            border: 1px solid rgba(102, 126, 234, 0.3);
+        }
+
+        .generating-playlist {
+            background: rgba(245, 158, 11, 0.2);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            border-radius: 15px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            color: #f59e0b;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .spinner {
+            animation: spin 1s linear infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="connection-status connecting" id="connectionStatus">
+        🔄 Connecting...
+    </div>
+
+    <div class="api-status" id="apiStatus">
+        🤖 AI Ready
+    </div>
+
+    <div class="debug-info" id="debugInfo"></div>
+
+    <div class="musical-bg" id="musicalBg"></div>
+    
+    <div class="stats" id="stats">
+        <div class="stat-item">
+            <span class="stat-icon">♪</span>
+            <span>Played: <span id="playedCount">0</span></span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-icon">♥</span>
+            <span>Likes: <span id="likeCount">0</span></span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-icon">✕</span>
+            <span>Skipped: <span id="dislikeCount">0</span></span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-icon">🎯</span>
+            <span>Playlist: <span id="playlistCount">0</span></span>
+        </div>
+    </div>
+
+    <div class="container" id="container">
+        <div class="logo">IranMix</div>
+        <div class="ai-badge">✨ AI-Powered Playlists</div>
+        
+        <div id="statusMessages"></div>
+        
+        <div class="loading" id="loading">
+            <div>🎵 Initializing AI music player...</div>
+            <div style="font-size: 0.9rem; opacity: 0.7; margin-top: 0.5rem;" id="loadingDetails">Starting up...</div>
+        </div>
+        
+        <div id="playerContent" style="display: none;">
+            <div class="time-context" id="timeContext">
+                Loading time context...
+            </div>
+
+            <div class="playlist-controls">
+                <button class="playlist-btn" id="generatePlaylistBtn">🎯 Smart Playlist</button>
+                <button class="playlist-btn" id="shufflePlaylistBtn">🔀 Mood Shuffle</button>
+                <button class="playlist-btn" id="clearPlaylistBtn">🗑️ Clear Playlist</button>
+            </div>
+
+            <div class="current-playlist" id="currentPlaylist" style="display: none;">
+                <div class="playlist-title" id="playlistTitle">AI Generated Playlist</div>
+                <div class="playlist-description" id="playlistDescription">Loading...</div>
+                <div class="playlist-tracks" id="playlistTracks"></div>
+            </div>
+
+            <div class="track-info">
+                <div class="title" id="trackTitle">Track Title</div>
+                <div class="singer" id="trackSinger">Artist Name</div>
+            </div>
+
+            <div class="player-container">
+                <button class="like-btn" id="likeBtn" title="Like">♥</button>
+                <button class="play-button" id="playBtn">▶️</button>
+                <button class="dislike-btn" id="dislikeBtn" title="Skip">✕</button>
+                <button class="next-btn" id="nextBtn" title="Next in Playlist">⏭️</button>
+            </div>
+
+            <div class="metadata">
+                <div class="metadata-item">
+                    <div class="metadata-label">Genres</div>
+                    <div id="genres">Loading...</div>
+                </div>
+                <div class="metadata-item">
+                    <div class="metadata-label">Moods</div>
+                    <div id="moods">Loading...</div>
+                </div>
+                <div class="prompt">
+                    <div class="metadata-label">Description</div>
+                    <div id="prompt">Loading...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <audio id="audio" preload="metadata"></audio>
+
+    <script>
+        class IranMixPlayer {
+            constructor() {
+                this.tracks = [];
+                this.currentTrack = null;
+                this.previousTrack = null;
+                this.audio = document.getElementById('audio');
+                this.isPlaying = false;
+                this.currentPlaylist = [];
+                this.currentPlaylistIndex = 0;
+                this.isPlaylistMode = false;
+                this.userPreferences = {
+                    plays: {},
+                    likes: new Set(),
+                    dislikes: new Set(),
+                    genreScores: {}
+                };
+                this.stats = {
+                    played: 0,
+                    liked: 0,
+                    disliked: 0,
+                    playlists: 0
+                };
+                this.themes = ['theme-neon', 'theme-sunset', 'theme-ocean', 'theme-purple'];
+                this.debugMode = localStorage.getItem('iranmix_debug') === 'true';
+                
+                // API Configuration
+                this.anthropicApiKey = localStorage.getItem('iranmix_api_key') || null;
+                this.isGeneratingPlaylist = false;
+                
+                // Dynamic server configuration
+                this.serverUrl = this.getServerUrl();
+                this.userId = this.getUserId();
+                this.isServerAvailable = false;
+                
+                this.initializeElements();
+                this.setupEventListeners();
+                this.createMusicalBackground();
+                
+                // Initialize app
+                this.initialize();
+            }
+
+            async initialize() {
+                try {
+                    this.debug('🚀 Starting IranMix AI Player');
+                    this.updateLoadingMessage('Checking server connection...');
+                    
+                    // Check API key
+                    this.checkApiKey();
+                    
+                    // Check server connection (but don't wait for it)
+                    this.checkServerConnection().catch(e => this.debug('Server check failed:', e));
+                    
+                    this.updateLoadingMessage('Loading user preferences...');
+                    await this.loadUserData();
+                    
+                    this.updateLoadingMessage('Loading music library...');
+                    await this.loadData();
+                    
+                    this.updateLoadingMessage('Setting up AI player...');
+                    this.loading.style.display = 'none';
+                    this.playerContent.style.display = 'block';
+                    this.updateStats();
+                    this.updateTimeContext();
+                    this.loadRandomTrack();
+                    
+                    this.showMessage('🎵 AI music player ready!', 'success', 2000);
+                    this.debug('✅ IranMix AI Player initialized successfully');
+                    
+                } catch (error) {
+                    this.debug('❌ Initialization failed:', error);
+                    this.showMessage(`Error: ${error.message}`, 'error');
+                    this.updateLoadingMessage(`Error: ${error.message}`);
+                }
+            }
+
+            checkApiKey() {
+                if (!this.anthropicApiKey) {
+                    this.showMessage('⚠️ Set your Anthropic API key for AI playlists. Triple-click the logo to configure.', 'error');
+                    this.updateApiStatus('❌ No API Key');
+                } else {
+                    this.updateApiStatus('🤖 AI Ready');
+                }
+            }
+
+            updateApiStatus(text) {
+                const apiStatus = document.getElementById('apiStatus');
+                apiStatus.textContent = text;
+            }
+
+            promptForApiKey() {
+                const apiKey = prompt('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');
+                if (apiKey && apiKey.trim()) {
+                    this.anthropicApiKey = apiKey.trim();
+                    localStorage.setItem('iranmix_api_key', this.anthropicApiKey);
+                    this.updateApiStatus('🤖 AI Ready');
+                    this.showMessage('✅ API key saved! AI playlists are now available.', 'success', 3000);
+                }
+            }
+
+            getTimeContext() {
+                const now = new Date();
+                const hour = now.getHours();
+                const day = now.toLocaleDateString('en-US', { weekday: 'long' });
+                const month = now.toLocaleDateString('en-US', { month: 'long' });
+                
+                let timeOfDay, mood, energy;
+                
+                if (hour >= 5 && hour < 9) {
+                    timeOfDay = 'Early Morning';
+                    mood = 'awakening, fresh start';
+                    energy = 'gentle, uplifting';
+                } else if (hour >= 9 && hour < 12) {
+                    timeOfDay = 'Morning';
+                    mood = 'productive, focused';
+                    energy = 'energetic, motivating';
+                } else if (hour >= 12 && hour < 14) {
+                    timeOfDay = 'Midday';
+                    mood = 'peak energy, social';
+                    energy = 'high, vibrant';
+                } else if (hour >= 14 && hour < 17) {
+                    timeOfDay = 'Afternoon';
+                    mood = 'steady, contemplative';
+                    energy = 'moderate, balanced';
+                } else if (hour >= 17 && hour < 20) {
+                    timeOfDay = 'Evening';
+                    mood = 'winding down, social';
+                    energy = 'relaxed, warm';
+                } else if (hour >= 20 && hour < 23) {
+                    timeOfDay = 'Night';
+                    mood = 'introspective, cozy';
+                    energy = 'calm, intimate';
+                } else {
+                    timeOfDay = 'Late Night';
+                    mood = 'deep, contemplative';
+                    energy = 'low, ambient';
+                }
+
+                return {
+                    timeOfDay,
+                    hour,
+                    day,
+                    month,
+                    mood,
+                    energy,
+                    timestamp: now.toLocaleString()
+                };
+            }
+
+            updateTimeContext() {
+                const context = this.getTimeContext();
+                const timeContextEl = document.getElementById('timeContext');
+                timeContextEl.innerHTML = `
+                    ⏰ ${context.timeOfDay} on ${context.day} | 
+                    🎭 ${context.mood} | 
+                    ⚡ ${context.energy}
+                `;
+            }
+
+            async generateAIPlaylist(type = 'smart') {
+                if (!this.anthropicApiKey) {
+                    this.showMessage('❌ API key required for AI playlists', 'error', 3000);
+                    return;
+                }
+
+                if (this.isGeneratingPlaylist) {
+                    this.showMessage('⏳ Already generating playlist...', 'error', 2000);
+                    return;
+                }
+
+                this.isGeneratingPlaylist = true;
+                this.updatePlaylistGenerationUI(true);
+
+                try {
+                    const context = this.getTimeContext();
+                    const userLikes = Array.from(this.userPreferences.likes);
+                    const userDislikes = Array.from(this.userPreferences.dislikes);
+                    
+                    // Prepare track data for AI analysis
+                    const trackData = this.tracks.map(track => ({
+                        id: this.getTrackId(track),
+                        title: track.title || 'Unknown',
+                        singer: track.singer || 'Unknown',
+                        genre1: track.genre1 || '',
+                        genre2: track.genre2 || '',
+                        mood1: track.mood1 || '',
+                        mood2: track.mood2 || '',
+                        mood3: track.mood3 || '',
+                        prompt: track.prompt || ''
+                    }));
+
+                    const playlistRequest = {
+                        type: type,
+                        timeContext: context,
+                        userPreferences: {
+                            likes: userLikes,
+                            dislikes: userDislikes,
+                            genreScores: this.userPreferences.genreScores
+                        },
+                        availableTracks: trackData,
+                        requestedLength: Math.min(20, this.tracks.length)
+                    };
+
+                    this.debug('🤖 Generating AI playlist:', playlistRequest);
+
+                    const aiResponse = await this.callAnthropicAPI(playlistRequest);
+                    
+                    if (aiResponse && aiResponse.playlist && aiResponse.playlist.length > 0) {
+                        this.setCurrentPlaylist(aiResponse);
+                        this.stats.playlists++;
+                        this.updateStats();
+                        await this.saveUserData();
+                        
+                        this.showMessage(`✅ Generated ${aiResponse.playlist.length}-track playlist!`, 'success', 3000);
+                        this.debug('✅ AI playlist generated successfully');
+                    } else {
+                        throw new Error('Invalid response from AI');
+                    }
+
+                } catch (error) {
+                    this.debug('❌ AI playlist generation failed:', error);
+                    this.showMessage(`❌ Failed to generate playlist: ${error.message}`, 'error', 5000);
+                } finally {
+                    this.isGeneratingPlaylist = false;
+                    this.updatePlaylistGenerationUI(false);
+                }
+            }
+
+            async callAnthropicAPI(playlistRequest) {
+                // Since we can't make direct API calls from the browser due to CORS,
+                // we'll use the server as a proxy
+                if (!this.isServerAvailable) {
+                    throw new Error('Server connection required for AI features');
+                }
+
+                const response = await fetch(`${this.serverUrl}/api/generate-playlist`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${this.anthropicApiKey}`
+                    },
+                    body: JSON.stringify(playlistRequest),
+                    signal: AbortSignal.timeout(30000)
+                });
+
+                if (!response.ok) {
+                    const error = await response.text();
+                    throw new Error(`API Error: ${response.status} - ${error}`);
+                }
+
+                return await response.json();
+            }
+
+            setCurrentPlaylist(aiResponse) {
+                this.currentPlaylist = aiResponse.playlist.map(item => {
+                    const track = this.tracks.find(t => this.getTrackId(t) === item.id);
+                    return track || null;
+                }).filter(track => track !== null);
+
+                this.currentPlaylistIndex = 0;
+                this.isPlaylistMode = true;
+
+                // Update UI
+                const playlistEl = document.getElementById('currentPlaylist');
+                const titleEl = document.getElementById('playlistTitle');
+                const descEl = document.getElementById('playlistDescription');
+                const tracksEl = document.getElementById('playlistTracks');
+
+                titleEl.textContent = aiResponse.title || 'AI Generated Playlist';
+                descEl.textContent = aiResponse.description || 'Curated based on your preferences and current time.';
+
+                tracksEl.innerHTML = this.currentPlaylist.map((track, index) => `
+                    <div class="playlist-track ${index === 0 ? 'current' : ''}" data-index="${index}">
+                        <span>${track.title} - ${track.singer}</span>
+                        <span>${index + 1}/${this.currentPlaylist.length}</span>
+                    </div>
+                `).join('');
+
+                playlistEl.style.display = 'block';
+
+                // Load first track
+                if (this.currentPlaylist.length > 0) {
+                    this.loadPlaylistTrack(0);
+                }
+            }
+
+            loadPlaylistTrack(index) {
+                if (!this.isPlaylistMode || index >= this.currentPlaylist.length) return;
+
+                this.currentPlaylistIndex = index;
+                this.currentTrack = this.currentPlaylist[index];
+                
+                this.updateUI();
+                this.changeTheme();
+                this.updateAudio();
+                this.updatePlaylistUI();
+
+                if (this.isPlaying) {
+                    this.playTrack();
+                }
+
+                this.debug(`🎵 Loaded playlist track ${index + 1}/${this.currentPlaylist.length}:`, this.currentTrack.title);
+            }
+
+            updatePlaylistUI() {
+                const tracksEl = document.getElementById('playlistTracks');
+                if (tracksEl && this.isPlaylistMode) {
+                    const trackElements = tracksEl.querySelectorAll('.playlist-track');
+                    trackElements.forEach((el, index) => {
+                        el.classList.toggle('current', index === this.currentPlaylistIndex);
+                    });
+                }
+            }
+
+            nextPlaylistTrack() {
+                if (!this.isPlaylistMode) {
+                    this.loadRandomTrack();
+                    return;
+                }
+
+                if (this.currentPlaylistIndex < this.currentPlaylist.length - 1) {
+                    this.loadPlaylistTrack(this.currentPlaylistIndex + 1);
+                } else {
+                    // Playlist ended, generate new one or go to random
+                    this.showMessage('🎵 Playlist completed! Loading random track...', 'success', 2000);
+                    this.clearCurrentPlaylist();
+                    this.loadRandomTrack();
+                }
+            }
+
+            clearCurrentPlaylist() {
+                this.currentPlaylist = [];
+                this.currentPlaylistIndex = 0;
+                this.isPlaylistMode = false;
+                
+                const playlistEl = document.getElementById('currentPlaylist');
+                playlistEl.style.display = 'none';
+                
+                this.showMessage('🗑️ Playlist cleared', 'success', 2000);
+            }
+
+            updatePlaylistGenerationUI(isGenerating) {
+                const generateBtn = document.getElementById('generatePlaylistBtn');
+                const shuffleBtn = document.getElementById('shufflePlaylistBtn');
+                
+                if (isGenerating) {
+                    generateBtn.disabled = true;
+                    shuffleBtn.disabled = true;
+                    generateBtn.innerHTML = '<span class="spinner">⏳</span> Generating...';
+                    
+                    // Show generating message
+                    const statusContainer = document.getElementById('statusMessages');
+                    const genMessage = document.createElement('div');
+                    genMessage.className = 'generating-playlist';
+                    genMessage.id = 'generatingMessage';
+                    genMessage.innerHTML = '<span class="spinner">🤖</span> AI is analyzing your music preferences and creating the perfect playlist...';
+                    statusContainer.appendChild(genMessage);
+                } else {
+                    generateBtn.disabled = false;
+                    shuffleBtn.disabled = false;
+                    generateBtn.innerHTML = '🎯 Smart Playlist';
+                    
+                    // Remove generating message
+                    const genMessage = document.getElementById('generatingMessage');
+                    if (genMessage) genMessage.remove();
+                }
+            }
+
+            debug(message, ...args) {
+                console.log(`[IranMix] ${message}`, ...args);
+                
+                if (this.debugMode) {
+                    const debugEl = document.getElementById('debugInfo');
+                    debugEl.style.display = 'block';
+                    debugEl.innerHTML += `<div>${new Date().toLocaleTimeString()}: ${message}</div>`;
+                    debugEl.scrollTop = debugEl.scrollHeight;
+                }
+            }
+
+            updateLoadingMessage(message) {
+                const loadingDetails = document.getElementById('loadingDetails');
+                if (loadingDetails) {
+                    loadingDetails.textContent = message;
+                }
+                this.debug(message);
+            }
+
+            showMessage(message, type = 'info', autoHide = 0) {
+                const statusContainer = document.getElementById('statusMessages');
+                const messageEl = document.createElement('div');
+                messageEl.className = type;
+                messageEl.textContent = message;
+                statusContainer.appendChild(messageEl);
+                
+                if (autoHide > 0) {
+                    setTimeout(() => {
+                        messageEl.remove();
+                    }, autoHide);
+                }
+            }
+
+            getServerUrl() {
+                const hostname = window.location.hostname;
+                
+                if (hostname === 'localhost' || hostname === '127.0.0.1') {
+                    return 'http://localhost:3001';
+                }
+                
+                return 'https://remix-production-fc7f.up.railway.app';
+            }
+
+            async checkServerConnection() {
+                this.debug('🔍 Testing server connection to:', this.serverUrl);
+                this.updateConnectionStatus('connecting', 'Connecting...');
+                
+                try {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 10000);
+                    
+                    const response = await fetch(`${this.serverUrl}/api/health`, {
+                        method: 'GET',
+                        mode: 'cors',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        signal: controller.signal
+                    });
+                    
+                    clearTimeout(timeoutId);
+                    
+                    if (response.ok) {
+                        this.isServerAvailable = true;
+                        this.updateConnectionStatus('online', 'Server Connected');
+                        this.debug('✅ Server connection successful');
+                        return true;
+                    } else {
+                        throw new Error(`Server returned ${response.status}`);
+                    }
+                } catch (error) {
+                    this.debug('❌ Server connection failed:', error.message);
+                    this.isServerAvailable = false;
+                    this.updateConnectionStatus('offline', 'Offline Mode');
+                    return false;
+                }
+            }
+
+            updateConnectionStatus(status, text) {
+                const statusEl = document.getElementById('connectionStatus');
+                statusEl.className = `connection-status ${status}`;
+                const icons = {
+                    online: '🟢',
+                    offline: '🔴', 
+                    connecting: '🟡'
+                };
+                statusEl.textContent = `${icons[status]} ${text}`;
+            }
+
+            getUserId() {
+                let userId = localStorage.getItem('iranmix_userId');
+                if (!userId) {
+                    const fingerprint = [
+                        screen.width,
+                        screen.height,
+                        new Date().getTimezoneOffset(),
+                        navigator.language,
+                        navigator.platform,
+                        Date.now()
+                    ].join('|');
+                    
+                    userId = this.simpleHash(fingerprint);
+                    localStorage.setItem('iranmix_userId', userId);
+                }
+                return userId;
+            }
+
+            simpleHash(str) {
+                let hash = 0;
+                for (let i = 0; i < str.length; i++) {
+                    const char = str.charCodeAt(i);
+                    hash = ((hash << 5) - hash) + char;
+                    hash = hash & hash;
+                }
+                return Math.abs(hash).toString(16).substring(0, 16);
+            }
+
+            initializeElements() {
+                this.playBtn = document.getElementById('playBtn');
+                this.likeBtn = document.getElementById('likeBtn');
+                this.dislikeBtn = document.getElementById('dislikeBtn');
+                this.nextBtn = document.getElementById('nextBtn');
+                this.trackTitle = document.getElementById('trackTitle');
+                this.trackSinger = document.getElementById('trackSinger');
+                this.genres = document.getElementById('genres');
+                this.moods = document.getElementById('moods');
+                this.prompt = document.getElementById('prompt');
+                this.loading = document.getElementById('loading');
+                this.playerContent = document.getElementById('playerContent');
+                this.container = document.getElementById('container');
+            }
+
+            async loadUserData() {
+                if (this.isServerAvailable) {
+                    try {
+                        const response = await fetch(`${this.serverUrl}/api/user/${this.userId}`, {
+                            signal: AbortSignal.timeout(5000)
+                        });
+                        if (response.ok) {
+                            const serverData = await response.json();
+                            this.stats = serverData.stats || this.stats;
+                            if (serverData.userPreferences) {
+                                this.userPreferences.plays = serverData.userPreferences.plays || {};
+                                this.userPreferences.likes = new Set(serverData.userPreferences.likes || []);
+                                this.userPreferences.dislikes = new Set(serverData.userPreferences.dislikes || []);
+                                this.userPreferences.genreScores = serverData.userPreferences.genreScores || {};
+                            }
+                            this.debug('✅ User data loaded from server');
+                            return;
+                        }
+                    } catch (error) {
+                        this.debug('❌ Failed to load from server:', error.message);
+                    }
+                }
+
+                this.loadUserDataFromLocalStorage();
+            }
+
+            loadUserDataFromLocalStorage() {
+                try {
+                    if (typeof(Storage) !== "undefined" && localStorage) {
+                        const saved = localStorage.getItem('iranmix_data');
+                        if (saved) {
+                            const data = JSON.parse(saved);
+                            this.stats = data.stats || this.stats;
+                            if (data.userPreferences) {
+                                this.userPreferences.plays = data.userPreferences.plays || {};
+                                this.userPreferences.likes = new Set(data.userPreferences.likes || []);
+                                this.userPreferences.dislikes = new Set(data.userPreferences.dislikes || []);
+                                this.userPreferences.genreScores = data.userPreferences.genreScores || {};
+                            }
+                            this.debug('✅ User data loaded from localStorage');
+                        }
+                    }
+                } catch (e) {
+                    this.debug('❌ localStorage not available:', e.message);
+                }
+            }
+
+            async saveUserData() {
+                const dataToSave = {
+                    stats: this.stats,
+                    userPreferences: {
+                        plays: this.userPreferences.plays,
+                        likes: Array.from(this.userPreferences.likes),
+                        dislikes: Array.from(this.userPreferences.dislikes),
+                        genreScores: this.userPreferences.genreScores
+                    }
+                };
+
+                if (this.isServerAvailable) {
+                    try {
+                        const response = await fetch(`${this.serverUrl}/api/user/${this.userId}`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify(dataToSave),
+                            signal: AbortSignal.timeout(5000)
+                        });
+                        
+                        if (response.ok) {
+                            this.debug('✅ Data saved to server');
+                        } else {
+                            throw new Error(`Server returned ${response.status}`);
+                        }
+                    } catch (error) {
+                        this.debug('❌ Failed to save to server:', error.message);
+                        this.isServerAvailable = false;
+                        this.updateConnectionStatus('offline', 'Connection Lost');
+                    }
+                }
+
+                try {
+                    if (typeof(Storage) !== "undefined" && localStorage) {
+                        localStorage.setItem('iranmix_data', JSON.stringify(dataToSave));
+                        this.debug('✅ Data saved to localStorage');
+                    }
+                } catch (e) {
+                    this.debug('❌ Failed to save to localStorage:', e.message);
+                }
+            }
+
+            async logAction(action, track) {
+                if (!this.isServerAvailable) return;
+
+                try {
+                    const response = await fetch(`${this.serverUrl}/api/user/${this.userId}/action`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            action: action,
+                            track: {
+                                title: track.title,
+                                singer: track.singer,
+                                genre1: track.genre1,
+                                genre2: track.genre2,
+                                mood1: track.mood1,
+                                mood2: track.mood2,
+                                mood3: track.mood3,
+                                prompt: track.prompt,
+                                url: track.url
+                            },
+                            context: this.getTimeContext()
+                        }),
+                        signal: AbortSignal.timeout(5000)
+                    });
+                    
+                    if (response.ok) {
+                        this.debug(`✅ ${action} logged successfully`);
+                    }
+                } catch (error) {
+                    this.debug(`❌ Failed to log ${action}:`, error.message);
+                }
+            }
+
+            async loadData() {
+                try {
+                    this.debug('📊 Loading CSV data from Google Sheets');
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 15000);
+                    
+                    const response = await fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vTTPb7TRMHE1IWfyloWxtwdUeB635fDt6vOQhHz7mnIgCAkggaf4GZWyShlVxDiHxburgP-Hm83yD9W/pub?output=csv', {
+                        signal: controller.signal
+                    });
+                    
+                    clearTimeout(timeoutId);
+                    
+                    if (!response.ok) {
+                        throw new Error(`Failed to load CSV: ${response.status} ${response.statusText}`);
+                    }
+                    
+                    const csvText = await response.text();
+                    this.debug(`📊 CSV loaded, size: ${csvText.length} characters`);
+                    
+                    this.parseCSV(csvText);
+                    
+                    if (this.tracks.length === 0) {
+                        throw new Error('No valid tracks found in CSV data');
+                    }
+                    
+                    this.debug(`✅ Parsed ${this.tracks.length} tracks successfully`);
+                    
+                } catch (error) {
+                    this.debug('❌ Error loading CSV data:', error.message);
+                    throw new Error(`Failed to load music library: ${error.message}`);
+                }
+            }
+
+            parseCSV(csvText) {
+                const lines = csvText.split('\n').filter(line => line.trim());
+                if (lines.length < 2) {
+                    throw new Error('CSV file appears to be empty or invalid');
+                }
+                
+                const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, '').toLowerCase());
+                this.debug('📊 CSV headers:', headers);
+                
+                let validTracks = 0;
+                let invalidTracks = 0;
+                
+                for (let i = 1; i < lines.length; i++) {
+                    try {
+                        const values = this.parseCSVLine(lines[i]);
+                        
+                        if (values.length >= headers.length) {
+                            const track = {};
+                            headers.forEach((header, index) => {
+                                track[header] = values[index] ? values[index].trim().replace(/"/g, '') : '';
+                            });
+                            
+                            // Validate required fields
+                            if (track.title && track.singer && track.url) {
+                                this.tracks.push(track);
+                                validTracks++;
+                            } else {
+                                invalidTracks++;
+                                this.debug(`⚠️ Invalid track at line ${i}: missing required fields`);
+                            }
+                        }
+                    } catch (error) {
+                        invalidTracks++;
+                        this.debug(`⚠️ Error parsing line ${i}:`, error.message);
+                    }
+                }
+                
+                this.debug(`📊 Parsing complete: ${validTracks} valid, ${invalidTracks} invalid tracks`);
+            }
+
+            parseCSVLine(line) {
+                const values = [];
+                let current = '';
+                let inQuotes = false;
+                
+                for (let i = 0; i < line.length; i++) {
+                    const char = line[i];
+                    if (char === '"') {
+                        inQuotes = !inQuotes;
+                    } else if (char === ',' && !inQuotes) {
+                        values.push(current);
+                        current = '';
+                    } else {
+                        current += char;
+                    }
+                }
+                values.push(current);
+                return values;
+            }
+
+            selectWeightedRandomTrack() {
+                if (this.tracks.length === 0) return null;
+
+                let availableTracks = this.tracks;
+                if (this.currentTrack) {
+                    availableTracks = this.tracks.filter(track => {
+                        const sameTitle = track.title && this.currentTrack.title && 
+                            track.title.toLowerCase().trim() === this.currentTrack.title.toLowerCase().trim();
+                        const sameSinger = track.singer && this.currentTrack.singer && 
+                            track.singer.toLowerCase().trim() === this.currentTrack.singer.toLowerCase().trim();
+                        return !sameTitle && !sameSinger;
+                    });
+                    
+                    if (availableTracks.length === 0) {
+                        availableTracks = this.tracks;
+                    }
+                }
+
+                const weightedTracks = [];
+                
+                availableTracks.forEach(track => {
+                    let weight = 1;
+                    
+                    if (track.genre1 && this.userPreferences.genreScores[track.genre1]) {
+                        weight += Math.max(0, this.userPreferences.genreScores[track.genre1] / 3);
+                    }
+                    if (track.genre2 && this.userPreferences.genreScores[track.genre2]) {
+                        weight += Math.max(0, this.userPreferences.genreScores[track.genre2] / 3);
+                    }
+                    
+                    for (let i = 0; i < Math.ceil(weight); i++) {
+                        weightedTracks.push(track);
+                    }
+                });
+
+                return weightedTracks[Math.floor(Math.random() * weightedTracks.length)];
+            }
+
+            loadRandomTrack() {
+                if (this.tracks.length === 0) {
+                    this.debug('❌ No tracks available to play');
+                    return;
+                }
+                
+                this.previousTrack = this.currentTrack;
+                this.currentTrack = this.selectWeightedRandomTrack();
+                
+                // Exit playlist mode
+                this.isPlaylistMode = false;
+                
+                this.debug('🎵 Loading track:', this.currentTrack.title, 'by', this.currentTrack.singer);
+                
+                this.updateUI();
+                this.changeTheme();
+                this.updateAudio();
+                
+                if (this.isPlaying) {
+                    this.playTrack();
+                }
+            }
+
+            updateUI() {
+                if (!this.currentTrack) return;
+
+                this.trackTitle.textContent = this.currentTrack.title || 'Unknown Title';
+                this.trackSinger.textContent = this.currentTrack.singer || 'Unknown Artist';
+                
+                const genreText = [this.currentTrack.genre1, this.currentTrack.genre2]
+                    .filter(g => g && g.trim()).join(' • ');
+                this.genres.textContent = genreText || 'Unknown Genre';
+                
+                const moodText = [this.currentTrack.mood1, this.currentTrack.mood2, this.currentTrack.mood3]
+                    .filter(m => m && m.trim()).join(' • ');
+                this.moods.textContent = moodText || 'No mood info';
+                
+                this.prompt.textContent = this.currentTrack.prompt || 'No description available';
+
+                const trackId = this.getTrackId(this.currentTrack);
+                this.likeBtn.style.opacity = this.userPreferences.likes.has(trackId) ? '1' : '0.6';
+                this.dislikeBtn.style.opacity = this.userPreferences.dislikes.has(trackId) ? '1' : '0.6';
+            }
+
+            updateAudio() {
+                if (!this.currentTrack || !this.currentTrack.url) {
+                    this.debug('❌ No audio URL available');
+                    return;
+                }
+                
+                this.audio.src = this.currentTrack.url;
+                this.audio.load();
+                this.debug('🔊 Audio loaded:', this.currentTrack.url);
+            }
+
+            changeTheme() {
+                this.themes.forEach(theme => {
+                    document.body.classList.remove(theme);
+                });
+                
+                const randomTheme = this.themes[Math.floor(Math.random() * this.themes.length)];
+                document.body.classList.add(randomTheme);
+            }
+
+            createMusicalBackground() {
+                const musicalBg = document.getElementById('musicalBg');
+                const notes = ['♪', '♫', '♬', '🎵', '🎶'];
+                
+                setInterval(() => {
+                    if (musicalBg.children.length > 10) return; // Limit notes
+                    
+                    const note = document.createElement('div');
+                    note.className = 'note';
+                    note.textContent = notes[Math.floor(Math.random() * notes.length)];
+                    note.style.left = Math.random() * 100 + '%';
+                    note.style.animationDelay = Math.random() * 2 + 's';
+                    note.style.animationDuration = (8 + Math.random() * 4) + 's';
+                    
+                    musicalBg.appendChild(note);
+                    
+                    setTimeout(() => {
+                        if (note.parentNode) note.remove();
+                    }, 12000);
+                }, 3000);
+            }
+
+            setupEventListeners() {
+                this.playBtn.addEventListener('click', () => this.togglePlay());
+                this.likeBtn.addEventListener('click', () => this.likeTrack());
+                this.dislikeBtn.addEventListener('click', () => this.dislikeTrack());
+                this.nextBtn.addEventListener('click', () => this.nextPlaylistTrack());
+
+                // Playlist controls
+                document.getElementById('generatePlaylistBtn').addEventListener('click', () => this.generateAIPlaylist('smart'));
+                document.getElementById('shufflePlaylistBtn').addEventListener('click', () => this.generateAIPlaylist('mood'));
+                document.getElementById('clearPlaylistBtn').addEventListener('click', () => this.clearCurrentPlaylist());
+
+                this.audio.addEventListener('ended', () => {
+                    this.debug('🎵 Track ended naturally');
+                    this.recordPlay();
+                    this.nextPlaylistTrack();
+                });
+
+                this.audio.addEventListener('error', (e) => {
+                    this.debug('❌ Audio error:', e.target.error);
+                    this.showMessage('Audio playback error, skipping to next track', 'error', 3000);
+                    setTimeout(() => this.nextPlaylistTrack(), 1000);
+                });
+
+                this.audio.addEventListener('loadstart', () => {
+                    this.debug('🔊 Audio loading started');
+                });
+
+                this.audio.addEventListener('canplay', () => {
+                    this.debug('🔊 Audio ready to play');
+                });
+
+                // Triple click to configure API key
+                this.logo = document.querySelector('.logo');
+                let clickCount = 0;
+                this.logo.addEventListener('click', () => {
+                    clickCount++;
+                    setTimeout(() => {
+                        if (clickCount === 3) {
+                            this.promptForApiKey();
+                        } else if (clickCount === 5) {
+                            this.debugMode = !this.debugMode;
+                            localStorage.setItem('iranmix_debug', this.debugMode.toString());
+                            const debugEl = document.getElementById('debugInfo');
+                            debugEl.style.display = this.debugMode ? 'block' : 'none';
+                            this.showMessage(`Debug mode ${this.debugMode ? 'enabled' : 'disabled'}`, 'success', 2000);
+                        }
+                        clickCount = 0;
+                    }, 500);
+                });
+
+                // Update time context every minute
+                setInterval(() => {
+                    this.updateTimeContext();
+                }, 60000);
+            }
+
+            playTrack() {
+                if (!this.currentTrack) return;
+                
+                this.audio.play().then(() => {
+                    this.playBtn.textContent = '⏸️';
+                    this.isPlaying = true;
+                    this.debug('▶️ Playing:', this.currentTrack.title);
+                }).catch(error => {
+                    this.debug('❌ Play error:', error.message);
+                    this.playBtn.textContent = '▶️';
+                    this.isPlaying = false;
+                    this.showMessage('Playback failed, trying next track', 'error', 2000);
+                    setTimeout(() => this.nextPlaylistTrack(), 1000);
+                });
+            }
+
+            togglePlay() {
+                if (this.isPlaying) {
+                    this.audio.pause();
+                    this.playBtn.textContent = '▶️';
+                    this.isPlaying = false;
+                    this.debug('⏸️ Paused');
+                } else {
+                    this.playTrack();
+                }
+            }
+
+            getTrackId(track) {
+                return `${track.title || 'unknown'}_${track.singer || 'unknown'}`;
+            }
+
+            async recordPlay() {
+                if (!this.currentTrack) return;
+                
+                const trackId = this.getTrackId(this.currentTrack);
+                this.userPreferences.plays[trackId] = (this.userPreferences.plays[trackId] || 0) + 2;
+                this.stats.played++;
+                
+                [this.currentTrack.genre1, this.currentTrack.genre2].forEach(genre => {
+                    if (genre && genre.trim()) {
+                        this.userPreferences.genreScores[genre] = 
+                            (this.userPreferences.genreScores[genre] || 0) + 2;
+                    }
+                });
+                
+                await this.logAction('play', this.currentTrack);
+                this.updateStats();
+                await this.saveUserData();
+                this.debug('📊 Play recorded for:', this.currentTrack.title);
+            }
+
+            async likeTrack() {
+                if (!this.currentTrack) return;
+                
+                const trackId = this.getTrackId(this.currentTrack);
+                
+                if (this.userPreferences.likes.has(trackId)) {
+                    this.userPreferences.likes.delete(trackId);
+                    this.stats.liked--;
+                    this.debug('💔 Removed like for:', this.currentTrack.title);
+                } else {
+                    this.userPreferences.likes.add(trackId);
+                    this.userPreferences.dislikes.delete(trackId);
+                    this.stats.liked++;
+                    if (this.stats.disliked > 0) this.stats.disliked--;
+                    
+                    [this.currentTrack.genre1, this.currentTrack.genre2].forEach(genre => {
+                        if (genre && genre.trim()) {
+                            this.userPreferences.genreScores[genre] = 
+                                (this.userPreferences.genreScores[genre] || 0) + 3;
+                        }
+                    });
+                    
+                    await this.logAction('like', this.currentTrack);
+                    this.debug('❤️ Liked:', this.currentTrack.title);
+                }
+                
+                this.updateUI();
+                this.updateStats();
+                await this.saveUserData();
+            }
+
+            async dislikeTrack() {
+                if (!this.currentTrack) return;
+                
+                const trackId = this.getTrackId(this.currentTrack);
+                
+                if (this.userPreferences.dislikes.has(trackId)) {
+                    this.userPreferences.dislikes.delete(trackId);
+                    this.stats.disliked--;
+                    this.debug('👍 Removed dislike for:', this.currentTrack.title);
+                } else {
+                    this.userPreferences.dislikes.add(trackId);
+                    this.userPreferences.likes.delete(trackId);
+                    this.stats.disliked++;
+                    if (this.stats.liked > 0) this.stats.liked--;
+                    
+                    [this.currentTrack.genre1, this.currentTrack.genre2].forEach(genre => {
+                        if (genre && genre.trim()) {
+                            this.userPreferences.genreScores[genre] = 
+                                (this.userPreferences.genreScores[genre] || 0) - 2;
+                        }
+                    });
+                    
+                    await this.logAction('skip', this.currentTrack);
+                    this.debug('👎 Disliked and skipping:', this.currentTrack.title);
+                    
+                    setTimeout(() => {
+                        this.audio.pause();
+                        this.nextPlaylistTrack();
+                    }, 500);
+                }
+                
+                this.updateUI();
+                this.updateStats();
+                await this.saveUserData();
+            }
+
+            updateStats() {
+                document.getElementById('playedCount').textContent = this.stats.played;
+                document.getElementById('likeCount').textContent = this.stats.liked;
+                document.getElementById('dislikeCount').textContent = this.stats.disliked;
+                document.getElementById('playlistCount').textContent = this.stats.playlists || 0;
+            }
+        }
+
+        // Initialize the player when page loads
+        window.addEventListener('DOMContentLoaded', () => {
+            try {
+                new IranMixPlayer();
+            } catch (error) {
+                console.error('Failed to initialize IranMix Player:', error);
+                document.getElementById('loading').innerHTML = `
+                    <div style="color: #fca5a5;">
+                        ❌ Failed to start music player<br>
+                        <small>${error.message}</small>
+                    </div>
+                `;
+            }
+        });
+
+        // Add keyboard shortcuts
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                document.getElementById('playBtn')?.click();
+            } else if (e.code === 'ArrowRight') {
+                document.getElementById('nextBtn')?.click();
+            } else if (e.code === 'ArrowUp') {
+                document.getElementById('likeBtn')?.click();
+            } else if (e.code === 'ArrowDown') {
+                document.getElementById('dislikeBtn')?.click();
+            }
+        });
+    </script>
+</body>
+</html>
