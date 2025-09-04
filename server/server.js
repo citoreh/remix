@@ -1,47 +1,59 @@
-
-// server.js
+// Minimal working server.js for Railway deployment
 const express = require('express');
 const cors = require('cors');
 const fs = require('fs').promises;
 const path = require('path');
-const crypto = require('crypto');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-const DATA_DIR = './user_data';
+
+console.log('Starting IranMix server...');
+console.log('Port:', PORT);
+console.log('Node version:', process.version);
 
 // Middleware
-app.use(cors());
-app.use(express.json());
+app.use(cors({
+    origin: ['*'], // Allow all origins for testing
+    credentials: false
+}));
+app.use(express.json({ limit: '10mb' }));
 
-// Ensure data directory exists
-async function ensureDataDir() {
+// Error handling middleware
+app.use((err, req, res, next) => {
+    console.error('Server error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+});
+
+// Basic health check (most important)
+app.get('/api/health', (req, res) => {
+    console.log('Health check requested');
+    res.json({ 
+        status: 'ok', 
+        message: 'IranMix server is running',
+        timestamp: new Date().toISOString(),
+        port: PORT
+    });
+});
+
+// Root endpoint
+app.get('/', (req, res) => {
+    res.json({ 
+        message: 'IranMix Server API',
+        version: '1.0.0',
+        status: 'running'
+    });
+});
+
+// Simple user data storage (in-memory for now to avoid file system issues)
+const userData = new Map();
+
+// Get user data
+app.get('/api/user/:userId', (req, res) => {
     try {
-        await fs.access(DATA_DIR);
-    } catch {
-        await fs.mkdir(DATA_DIR, { recursive: true });
-    }
-}
-
-// Generate user ID based on fingerprint or create new one
-function generateUserId(fingerprint) {
-    return crypto.createHash('sha256').update(fingerprint || Date.now().toString()).digest('hex').substring(0, 16);
-}
-
-// Get user file path
-function getUserFilePath(userId) {
-    return path.join(DATA_DIR, `${userId}.json`);
-}
-
-// Load user data
-async function loadUserData(userId) {
-    try {
-        const filePath = getUserFilePath(userId);
-        const data = await fs.readFile(filePath, 'utf8');
-        return JSON.parse(data);
-    } catch (error) {
-        // Return default data if file doesn't exist
-        return {
+        const userId = req.params.userId;
+        console.log('Getting user data for:', userId);
+        
+        const user = userData.get(userId) || {
             userId,
             stats: { played: 0, liked: 0, disliked: 0 },
             userPreferences: {
@@ -57,65 +69,62 @@ async function loadUserData(userId) {
             },
             lastUpdated: new Date().toISOString()
         };
-    }
-}
-
-// Save user data
-async function saveUserData(userId, data) {
-    const filePath = getUserFilePath(userId);
-    const dataWithTimestamp = {
-        ...data,
-        userId,
-        lastUpdated: new Date().toISOString()
-    };
-    await fs.writeFile(filePath, JSON.stringify(dataWithTimestamp, null, 2));
-}
-
-// Routes
-
-// Health check endpoint
-app.get('/api/health', (req, res) => {
-    res.json({ 
-        status: 'ok', 
-        message: 'IranMix server is running',
-        timestamp: new Date().toISOString() 
-    });
-});
-
-// Get user data
-app.get('/api/user/:userId', async (req, res) => {
-    try {
-        const userId = req.params.userId;
-        const userData = await loadUserData(userId);
-        res.json(userData);
+        
+        res.json(user);
     } catch (error) {
-        console.error('Error loading user data:', error);
-        res.status(500).json({ error: 'Failed to load user data' });
+        console.error('Error getting user:', error);
+        res.status(500).json({ error: 'Failed to get user data' });
     }
 });
 
 // Save user data
-app.post('/api/user/:userId', async (req, res) => {
+app.post('/api/user/:userId', (req, res) => {
     try {
         const userId = req.params.userId;
-        const userData = req.body;
-        await saveUserData(userId, userData);
+        const userDataToSave = req.body;
+        
+        console.log('Saving user data for:', userId);
+        
+        userData.set(userId, {
+            ...userDataToSave,
+            userId,
+            lastUpdated: new Date().toISOString()
+        });
+        
         res.json({ success: true, message: 'Data saved successfully' });
     } catch (error) {
-        console.error('Error saving user data:', error);
+        console.error('Error saving user:', error);
         res.status(500).json({ error: 'Failed to save user data' });
     }
 });
 
-// Log a specific action (play, like, skip)
-app.post('/api/user/:userId/action', async (req, res) => {
+// Log specific action
+app.post('/api/user/:userId/action', (req, res) => {
     try {
         const userId = req.params.userId;
-        const { action, track } = req.body; // action: 'play', 'like', 'skip'
+        const { action, track } = req.body;
         
-        const userData = await loadUserData(userId);
+        console.log(`Action: ${action} for user: ${userId}`);
+        console.log('Track:', track?.title);
         
-        // Create track entry with timestamp
+        // Get existing user data
+        const user = userData.get(userId) || {
+            userId,
+            stats: { played: 0, liked: 0, disliked: 0 },
+            userPreferences: {
+                plays: {},
+                likes: [],
+                dislikes: [],
+                genreScores: {}
+            },
+            history: {
+                played: [],
+                liked: [],
+                skipped: []
+            }
+        };
+        
+        // Create track entry
         const trackEntry = {
             ...track,
             timestamp: new Date().toISOString(),
@@ -123,31 +132,31 @@ app.post('/api/user/:userId/action', async (req, res) => {
         };
         
         // Update history
-        if (!userData.history) userData.history = { played: [], liked: [], skipped: [] };
-        
         switch (action) {
             case 'play':
-                userData.history.played.push(trackEntry);
-                userData.stats.played = (userData.stats.played || 0) + 1;
+                user.history.played.push(trackEntry);
+                user.stats.played = (user.stats.played || 0) + 1;
                 break;
             case 'like':
-                userData.history.liked.push(trackEntry);
-                userData.stats.liked = (userData.stats.liked || 0) + 1;
+                user.history.liked.push(trackEntry);
+                user.stats.liked = (user.stats.liked || 0) + 1;
                 break;
             case 'skip':
-                userData.history.skipped.push(trackEntry);
-                userData.stats.disliked = (userData.stats.disliked || 0) + 1;
+                user.history.skipped.push(trackEntry);
+                user.stats.disliked = (user.stats.disliked || 0) + 1;
                 break;
         }
         
-        // Keep only last 1000 entries per category to prevent unlimited growth
-        Object.keys(userData.history).forEach(key => {
-            if (userData.history[key].length > 1000) {
-                userData.history[key] = userData.history[key].slice(-1000);
+        // Keep only last 500 entries per category
+        Object.keys(user.history).forEach(key => {
+            if (user.history[key].length > 500) {
+                user.history[key] = user.history[key].slice(-500);
             }
         });
         
-        await saveUserData(userId, userData);
+        user.lastUpdated = new Date().toISOString();
+        userData.set(userId, user);
+        
         res.json({ success: true, message: `${action} logged successfully` });
     } catch (error) {
         console.error('Error logging action:', error);
@@ -155,82 +164,54 @@ app.post('/api/user/:userId/action', async (req, res) => {
     }
 });
 
-// Get user statistics
-app.get('/api/user/:userId/stats', async (req, res) => {
+// Get user's song lists (for admin dashboard)
+app.get('/api/user/:userId/lists', (req, res) => {
     try {
         const userId = req.params.userId;
-        const userData = await loadUserData(userId);
+        const user = userData.get(userId);
         
-        const stats = {
-            totalPlayed: userData.history?.played?.length || 0,
-            totalLiked: userData.history?.liked?.length || 0,
-            totalSkipped: userData.history?.skipped?.length || 0,
-            topGenres: getTopGenres(userData.userPreferences?.genreScores || {}),
-            recentActivity: getRecentActivity(userData.history || {})
-        };
+        if (!user) {
+            return res.json({
+                played: [],
+                liked: [],
+                skipped: []
+            });
+        }
         
-        res.json(stats);
-    } catch (error) {
-        console.error('Error getting stats:', error);
-        res.status(500).json({ error: 'Failed to get stats' });
-    }
-});
-
-// Get user's song lists
-app.get('/api/user/:userId/lists', async (req, res) => {
-    try {
-        const userId = req.params.userId;
-        const userData = await loadUserData(userId);
-        
-        const lists = {
-            played: userData.history?.played || [],
-            liked: userData.history?.liked || [],
-            skipped: userData.history?.skipped || []
-        };
-        
-        res.json(lists);
+        res.json({
+            played: user.history?.played || [],
+            liked: user.history?.liked || [],
+            skipped: user.history?.skipped || []
+        });
     } catch (error) {
         console.error('Error getting lists:', error);
         res.status(500).json({ error: 'Failed to get lists' });
     }
 });
 
-// Helper functions
-function getTopGenres(genreScores) {
-    return Object.entries(genreScores)
-        .sort(([,a], [,b]) => b - a)
-        .slice(0, 5)
-        .map(([genre, score]) => ({ genre, score }));
-}
+// Catch all unhandled routes
+app.use((req, res) => {
+    res.status(404).json({ error: 'Endpoint not found' });
+});
 
-function getRecentActivity(history) {
-    const allActivities = [];
-    
-    if (history.played) {
-        allActivities.push(...history.played.map(item => ({ ...item, action: 'played' })));
-    }
-    if (history.liked) {
-        allActivities.push(...history.liked.map(item => ({ ...item, action: 'liked' })));
-    }
-    if (history.skipped) {
-        allActivities.push(...history.skipped.map(item => ({ ...item, action: 'skipped' })));
-    }
-    
-    return allActivities
-        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-        .slice(0, 20);
-}
+// Start server
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`✅ IranMix server successfully started on port ${PORT}`);
+    console.log(`🌍 Health check: http://localhost:${PORT}/api/health`);
+}).on('error', (err) => {
+    console.error('❌ Failed to start server:', err);
+    process.exit(1);
+});
 
-// Initialize server
-async function startServer() {
-    await ensureDataDir();
-    app.listen(PORT, () => {
-        console.log(`IranMix server running on port ${PORT}`);
-        console.log(`User data will be stored in: ${path.resolve(DATA_DIR)}`);
-    });
-}
+// Graceful shutdown
+process.on('SIGTERM', () => {
+    console.log('SIGTERM received, shutting down gracefully');
+    process.exit(0);
+});
 
-startServer().catch(console.error);
+process.on('SIGINT', () => {
+    console.log('SIGINT received, shutting down gracefully');
+    process.exit(0);
+});
 
-// Export for testing
-module.exports = app;
+console.log('Server setup complete, waiting for requests...');
