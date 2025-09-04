@@ -75,6 +75,7 @@
             position: relative;
             max-width: 500px;
             border: 1px solid rgba(255, 255, 255, 0.2);
+            width: 90%;
         }
 
         .logo {
@@ -206,6 +207,25 @@
         .loading {
             font-size: 1.2rem;
             opacity: 0.8;
+            padding: 2rem;
+        }
+
+        .error {
+            background: rgba(220, 38, 38, 0.2);
+            border: 1px solid rgba(220, 38, 38, 0.3);
+            border-radius: 15px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            color: #fca5a5;
+        }
+
+        .success {
+            background: rgba(34, 197, 94, 0.2);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            border-radius: 15px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            color: #86efac;
         }
 
         .stats {
@@ -230,6 +250,15 @@
                 padding: 0.75rem 1rem;
                 font-size: 0.8rem;
             }
+            
+            .container {
+                padding: 2rem 1rem;
+                margin: 1rem;
+            }
+            
+            .metadata {
+                grid-template-columns: 1fr;
+            }
         }
 
         .stat-item {
@@ -244,7 +273,6 @@
             font-size: 1.1rem;
         }
 
-        /* Connection status indicator */
         .connection-status {
             position: fixed;
             top: 1rem;
@@ -269,28 +297,42 @@
             border: 1px solid rgba(239, 68, 68, 0.3);
         }
 
-        /* Dynamic theme classes */
-        .theme-neon {
-            filter: hue-rotate(120deg);
+        .connection-status.connecting {
+            background: rgba(245, 158, 11, 0.2);
+            color: #d97706;
+            border: 1px solid rgba(245, 158, 11, 0.3);
         }
 
-        .theme-sunset {
-            filter: hue-rotate(30deg);
+        .debug-info {
+            position: fixed;
+            bottom: 100px;
+            left: 1rem;
+            background: rgba(0, 0, 0, 0.8);
+            color: #10b981;
+            font-family: 'Courier New', monospace;
+            font-size: 0.7rem;
+            padding: 0.5rem;
+            border-radius: 5px;
+            max-width: 300px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 100;
+            display: none;
         }
 
-        .theme-ocean {
-            filter: hue-rotate(200deg);
-        }
-
-        .theme-purple {
-            filter: hue-rotate(270deg);
-        }
+        /* Theme classes */
+        .theme-neon { filter: hue-rotate(120deg); }
+        .theme-sunset { filter: hue-rotate(30deg); }
+        .theme-ocean { filter: hue-rotate(200deg); }
+        .theme-purple { filter: hue-rotate(270deg); }
     </style>
 </head>
 <body>
-    <div class="connection-status offline" id="connectionStatus">
+    <div class="connection-status connecting" id="connectionStatus">
         🔄 Connecting...
     </div>
+
+    <div class="debug-info" id="debugInfo"></div>
 
     <div class="musical-bg" id="musicalBg"></div>
     
@@ -312,7 +354,12 @@
     <div class="container" id="container">
         <div class="logo">IranMix</div>
         
-        <div class="loading" id="loading">Loading music...</div>
+        <div id="statusMessages"></div>
+        
+        <div class="loading" id="loading">
+            <div>🎵 Initializing music player...</div>
+            <div style="font-size: 0.9rem; opacity: 0.7; margin-top: 0.5rem;" id="loadingDetails">Starting up...</div>
+        </div>
         
         <div id="playerContent" style="display: none;">
             <div class="track-info">
@@ -329,21 +376,21 @@
             <div class="metadata">
                 <div class="metadata-item">
                     <div class="metadata-label">Genres</div>
-                    <div id="genres">Genre info</div>
+                    <div id="genres">Loading...</div>
                 </div>
                 <div class="metadata-item">
                     <div class="metadata-label">Moods</div>
-                    <div id="moods">Mood info</div>
+                    <div id="moods">Loading...</div>
                 </div>
                 <div class="prompt">
                     <div class="metadata-label">Description</div>
-                    <div id="prompt">Track description</div>
+                    <div id="prompt">Loading...</div>
                 </div>
             </div>
         </div>
     </div>
 
-    <audio id="audio"></audio>
+    <audio id="audio" preload="metadata"></audio>
 
     <script>
         class IranMixPlayer {
@@ -365,6 +412,7 @@
                     disliked: 0
                 };
                 this.themes = ['theme-neon', 'theme-sunset', 'theme-ocean', 'theme-purple'];
+                this.debugMode = localStorage.getItem('iranmix_debug') === 'true';
                 
                 // Dynamic server configuration
                 this.serverUrl = this.getServerUrl();
@@ -372,79 +420,150 @@
                 this.isServerAvailable = false;
                 
                 this.initializeElements();
-                this.checkServerConnection();
-                this.loadUserData();
-                this.loadData();
                 this.setupEventListeners();
                 this.createMusicalBackground();
+                
+                // Initialize app
+                this.initialize();
             }
 
-            // Determine server URL based on environment
-           getServerUrl() {
-    const hostname = window.location.hostname;
-    
-    if (hostname === 'localhost' || hostname === '127.0.0.1') {
-        return 'http://localhost:3001';
-    }
-    
-    // UPDATE THIS LINE:
-    return 'https://remix-production-fc7f.up.railway.app';
-}
-            // Check if server is available
-async checkServerConnection() {
-    console.log('🔍 Testing server connection to:', this.serverUrl);
-    try {
-        const response = await fetch(`${this.serverUrl}/api/health`, {
-            method: 'GET',
-            mode: 'cors', // Add this
-            headers: {
-                'Content-Type': 'application/json'
+            async initialize() {
+                try {
+                    this.debug('🚀 Starting IranMix Player');
+                    this.updateLoadingMessage('Checking server connection...');
+                    
+                    // Check server connection (but don't wait for it)
+                    this.checkServerConnection().catch(e => this.debug('Server check failed:', e));
+                    
+                    this.updateLoadingMessage('Loading user preferences...');
+                    await this.loadUserData();
+                    
+                    this.updateLoadingMessage('Loading music library...');
+                    await this.loadData();
+                    
+                    this.updateLoadingMessage('Setting up player...');
+                    this.loading.style.display = 'none';
+                    this.playerContent.style.display = 'block';
+                    this.updateStats();
+                    this.loadRandomTrack();
+                    
+                    this.showMessage('🎵 Music player ready!', 'success', 2000);
+                    this.debug('✅ IranMix Player initialized successfully');
+                    
+                } catch (error) {
+                    this.debug('❌ Initialization failed:', error);
+                    this.showMessage(`Error: ${error.message}`, 'error');
+                    this.updateLoadingMessage(`Error: ${error.message}`);
+                }
             }
-        });
-        
-        console.log('🔍 Health check response status:', response.status);
-        console.log('🔍 Health check response ok:', response.ok);
-        
-        if (response.ok) {
-            const data = await response.json();
-            console.log('🔍 Health check data:', data);
-            
-            this.isServerAvailable = true;
-            this.updateConnectionStatus('online', 'Server Connected');
-            console.log('✅ Server connection successful');
-        } else {
-            throw new Error(`Server returned ${response.status}`);
-        }
-    } catch (error) {
-        console.error('❌ Server connection failed:', error);
-        this.isServerAvailable = false;
-        this.updateConnectionStatus('offline', 'Offline Mode');
-        
-        // Try manual test to see if it's just the health endpoint
-        console.log('🔧 Trying manual connection test...');
-        try {
-            const testResponse = await fetch(`${this.serverUrl}/api/user/${this.userId}`, {
-                method: 'GET',
-                mode: 'cors'
-            });
-            if (testResponse.ok) {
-                console.log('✅ Manual test works - health endpoint might be the issue');
-                this.isServerAvailable = true;
-                this.updateConnectionStatus('online', 'Server Connected (Manual Test)');
+
+            debug(message, ...args) {
+                console.log(`[IranMix] ${message}`, ...args);
+                
+                if (this.debugMode) {
+                    const debugEl = document.getElementById('debugInfo');
+                    debugEl.style.display = 'block';
+                    debugEl.innerHTML += `<div>${new Date().toLocaleTimeString()}: ${message}</div>`;
+                    debugEl.scrollTop = debugEl.scrollHeight;
+                }
             }
-        } catch (manualError) {
-            console.error('❌ Manual test also failed:', manualError);
-        }
-    }
-}
+
+            updateLoadingMessage(message) {
+                const loadingDetails = document.getElementById('loadingDetails');
+                if (loadingDetails) {
+                    loadingDetails.textContent = message;
+                }
+                this.debug(message);
+            }
+
+            showMessage(message, type = 'info', autoHide = 0) {
+                const statusContainer = document.getElementById('statusMessages');
+                const messageEl = document.createElement('div');
+                messageEl.className = type;
+                messageEl.textContent = message;
+                statusContainer.appendChild(messageEl);
+                
+                if (autoHide > 0) {
+                    setTimeout(() => {
+                        messageEl.remove();
+                    }, autoHide);
+                }
+            }
+
+            getServerUrl() {
+                const hostname = window.location.hostname;
+                
+                if (hostname === 'localhost' || hostname === '127.0.0.1') {
+                    return 'http://localhost:3001';
+                }
+                
+                return 'https://remix-production-fc7f.up.railway.app';
+            }
+
+            async checkServerConnection() {
+                this.debug('🔍 Testing server connection to:', this.serverUrl);
+                this.updateConnectionStatus('connecting', 'Connecting...');
+                
+                try {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 10000);
+                    
+                    const response = await fetch(`${this.serverUrl}/api/health`, {
+                        method: 'GET',
+                        mode: 'cors',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        signal: controller.signal
+                    });
+                    
+                    clearTimeout(timeoutId);
+                    
+                    if (response.ok) {
+                        this.isServerAvailable = true;
+                        this.updateConnectionStatus('online', 'Server Connected');
+                        this.debug('✅ Server connection successful');
+                        return true;
+                    } else {
+                        throw new Error(`Server returned ${response.status}`);
+                    }
+                } catch (error) {
+                    this.debug('❌ Server connection failed:', error.message);
+                    this.isServerAvailable = false;
+                    this.updateConnectionStatus('offline', 'Offline Mode');
+                    
+                    // Try a fallback test
+                    try {
+                        const testResponse = await fetch(`${this.serverUrl}/api/user/${this.userId}`, {
+                            method: 'GET',
+                            mode: 'cors',
+                            signal: AbortSignal.timeout(5000)
+                        });
+                        if (testResponse.ok || testResponse.status === 404) {
+                            this.debug('✅ Server is accessible via fallback test');
+                            this.isServerAvailable = true;
+                            this.updateConnectionStatus('online', 'Server Connected');
+                            return true;
+                        }
+                    } catch (fallbackError) {
+                        this.debug('❌ Fallback test also failed:', fallbackError.message);
+                    }
+                    
+                    return false;
+                }
+            }
 
             updateConnectionStatus(status, text) {
                 const statusEl = document.getElementById('connectionStatus');
                 statusEl.className = `connection-status ${status}`;
-                statusEl.textContent = status === 'online' ? '🟢 ' + text : '🔴 ' + text;
+                const icons = {
+                    online: '🟢',
+                    offline: '🔴', 
+                    connecting: '🟡'
+                };
+                statusEl.textContent = `${icons[status]} ${text}`;
             }
 
-            // Generate or retrieve user ID
             getUserId() {
                 let userId = localStorage.getItem('iranmix_userId');
                 if (!userId) {
@@ -453,7 +572,8 @@ async checkServerConnection() {
                         screen.height,
                         new Date().getTimezoneOffset(),
                         navigator.language,
-                        navigator.platform
+                        navigator.platform,
+                        Date.now()
                     ].join('|');
                     
                     userId = this.simpleHash(fingerprint);
@@ -462,7 +582,6 @@ async checkServerConnection() {
                 return userId;
             }
 
-            // Simple hash function for client-side fingerprinting
             simpleHash(str) {
                 let hash = 0;
                 for (let i = 0; i < str.length; i++) {
@@ -487,11 +606,12 @@ async checkServerConnection() {
                 this.container = document.getElementById('container');
             }
 
-            // Load user data from server or localStorage
             async loadUserData() {
                 if (this.isServerAvailable) {
                     try {
-                        const response = await fetch(`${this.serverUrl}/api/user/${this.userId}`);
+                        const response = await fetch(`${this.serverUrl}/api/user/${this.userId}`, {
+                            signal: AbortSignal.timeout(5000)
+                        });
                         if (response.ok) {
                             const serverData = await response.json();
                             this.stats = serverData.stats || this.stats;
@@ -501,19 +621,17 @@ async checkServerConnection() {
                                 this.userPreferences.dislikes = new Set(serverData.userPreferences.dislikes || []);
                                 this.userPreferences.genreScores = serverData.userPreferences.genreScores || {};
                             }
-                            console.log('User data loaded from server');
+                            this.debug('✅ User data loaded from server');
                             return;
                         }
                     } catch (error) {
-                        console.log('Failed to load from server, using localStorage:', error);
+                        this.debug('❌ Failed to load from server:', error.message);
                     }
                 }
 
-                // Fallback to localStorage
                 this.loadUserDataFromLocalStorage();
             }
 
-            // Fallback method for localStorage
             loadUserDataFromLocalStorage() {
                 try {
                     if (typeof(Storage) !== "undefined" && localStorage) {
@@ -527,14 +645,14 @@ async checkServerConnection() {
                                 this.userPreferences.dislikes = new Set(data.userPreferences.dislikes || []);
                                 this.userPreferences.genreScores = data.userPreferences.genreScores || {};
                             }
+                            this.debug('✅ User data loaded from localStorage');
                         }
                     }
                 } catch (e) {
-                    console.log('localStorage not available');
+                    this.debug('❌ localStorage not available:', e.message);
                 }
             }
 
-            // Save user data to server and localStorage
             async saveUserData() {
                 const dataToSave = {
                     stats: this.stats,
@@ -546,7 +664,6 @@ async checkServerConnection() {
                     }
                 };
 
-                // Try to save to server first
                 if (this.isServerAvailable) {
                     try {
                         const response = await fetch(`${this.serverUrl}/api/user/${this.userId}`, {
@@ -554,32 +671,32 @@ async checkServerConnection() {
                             headers: {
                                 'Content-Type': 'application/json',
                             },
-                            body: JSON.stringify(dataToSave)
+                            body: JSON.stringify(dataToSave),
+                            signal: AbortSignal.timeout(5000)
                         });
                         
                         if (response.ok) {
-                            console.log('Data saved to server successfully');
+                            this.debug('✅ Data saved to server');
                         } else {
-                            throw new Error('Server response not ok');
+                            throw new Error(`Server returned ${response.status}`);
                         }
                     } catch (error) {
-                        console.log('Failed to save to server:', error);
+                        this.debug('❌ Failed to save to server:', error.message);
                         this.isServerAvailable = false;
                         this.updateConnectionStatus('offline', 'Connection Lost');
                     }
                 }
 
-                // Always save to localStorage as backup
                 try {
                     if (typeof(Storage) !== "undefined" && localStorage) {
                         localStorage.setItem('iranmix_data', JSON.stringify(dataToSave));
+                        this.debug('✅ Data saved to localStorage');
                     }
                 } catch (e) {
-                    console.error('Failed to save to localStorage:', e);
+                    this.debug('❌ Failed to save to localStorage:', e.message);
                 }
             }
 
-            // Log specific action to server
             async logAction(action, track) {
                 if (!this.isServerAvailable) return;
 
@@ -602,46 +719,89 @@ async checkServerConnection() {
                                 prompt: track.prompt,
                                 url: track.url
                             }
-                        })
+                        }),
+                        signal: AbortSignal.timeout(5000)
                     });
                     
                     if (response.ok) {
-                        console.log(`${action} logged successfully`);
+                        this.debug(`✅ ${action} logged successfully`);
                     }
                 } catch (error) {
-                    console.log(`Failed to log ${action}:`, error);
+                    this.debug(`❌ Failed to log ${action}:`, error.message);
                 }
             }
 
             async loadData() {
                 try {
-                    const response = await fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vTTPb7TRMHE1IWfyloWxtwdUeB635fDt6vOQhHz7mnIgCAkggaf4GZWyShlVxDiHxburgP-Hm83yD9W/pub?output=csv');
+                    this.debug('📊 Loading CSV data from Google Sheets');
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 15000);
+                    
+                    const response = await fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vTTPb7TRMHE1IWfyloWxtwdUeB635fDt6vOQhHz7mnIgCAkggaf4GZWyShlVxDiHxburgP-Hm83yD9W/pub?output=csv', {
+                        signal: controller.signal
+                    });
+                    
+                    clearTimeout(timeoutId);
+                    
+                    if (!response.ok) {
+                        throw new Error(`Failed to load CSV: ${response.status} ${response.statusText}`);
+                    }
+                    
                     const csvText = await response.text();
+                    this.debug(`📊 CSV loaded, size: ${csvText.length} characters`);
+                    
                     this.parseCSV(csvText);
-                    this.loading.style.display = 'none';
-                    this.playerContent.style.display = 'block';
-                    this.updateStats();
-                    this.loadRandomTrack();
+                    
+                    if (this.tracks.length === 0) {
+                        throw new Error('No valid tracks found in CSV data');
+                    }
+                    
+                    this.debug(`✅ Parsed ${this.tracks.length} tracks successfully`);
+                    
                 } catch (error) {
-                    console.error('Error loading data:', error);
-                    this.loading.textContent = 'Error loading music data';
+                    this.debug('❌ Error loading CSV data:', error.message);
+                    throw new Error(`Failed to load music library: ${error.message}`);
                 }
             }
 
             parseCSV(csvText) {
-                const lines = csvText.split('\n');
-                const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+                const lines = csvText.split('\n').filter(line => line.trim());
+                if (lines.length < 2) {
+                    throw new Error('CSV file appears to be empty or invalid');
+                }
+                
+                const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, '').toLowerCase());
+                this.debug('📊 CSV headers:', headers);
+                
+                let validTracks = 0;
+                let invalidTracks = 0;
                 
                 for (let i = 1; i < lines.length; i++) {
-                    const values = this.parseCSVLine(lines[i]);
-                    if (values.length >= 9 && values[2]) {
-                        const track = {};
-                        headers.forEach((header, index) => {
-                            track[header.toLowerCase()] = values[index] ? values[index].trim().replace(/"/g, '') : '';
-                        });
-                        this.tracks.push(track);
+                    try {
+                        const values = this.parseCSVLine(lines[i]);
+                        
+                        if (values.length >= headers.length) {
+                            const track = {};
+                            headers.forEach((header, index) => {
+                                track[header] = values[index] ? values[index].trim().replace(/"/g, '') : '';
+                            });
+                            
+                            // Validate required fields
+                            if (track.title && track.singer && track.url) {
+                                this.tracks.push(track);
+                                validTracks++;
+                            } else {
+                                invalidTracks++;
+                                this.debug(`⚠️ Invalid track at line ${i}: missing required fields`);
+                            }
+                        }
+                    } catch (error) {
+                        invalidTracks++;
+                        this.debug(`⚠️ Error parsing line ${i}:`, error.message);
                     }
                 }
+                
+                this.debug(`📊 Parsing complete: ${validTracks} valid, ${invalidTracks} invalid tracks`);
             }
 
             parseCSVLine(line) {
@@ -703,21 +863,22 @@ async checkServerConnection() {
             }
 
             loadRandomTrack() {
-                if (this.tracks.length === 0) return;
+                if (this.tracks.length === 0) {
+                    this.debug('❌ No tracks available to play');
+                    return;
+                }
+                
                 this.previousTrack = this.currentTrack;
                 this.currentTrack = this.selectWeightedRandomTrack();
+                
+                this.debug('🎵 Loading track:', this.currentTrack.title, 'by', this.currentTrack.singer);
+                
                 this.updateUI();
                 this.changeTheme();
                 this.updateAudio();
                 
                 if (this.isPlaying) {
-                    this.audio.play().then(() => {
-                        this.playBtn.textContent = '⏸️';
-                        this.isPlaying = true;
-                    }).catch(error => {
-                        console.error('Play error:', error);
-                        this.loadRandomTrack();
-                    });
+                    this.playTrack();
                 }
             }
 
@@ -728,11 +889,11 @@ async checkServerConnection() {
                 this.trackSinger.textContent = this.currentTrack.singer || 'Unknown Artist';
                 
                 const genreText = [this.currentTrack.genre1, this.currentTrack.genre2]
-                    .filter(g => g).join(' • ');
+                    .filter(g => g && g.trim()).join(' • ');
                 this.genres.textContent = genreText || 'Unknown Genre';
                 
                 const moodText = [this.currentTrack.mood1, this.currentTrack.mood2, this.currentTrack.mood3]
-                    .filter(m => m).join(' • ');
+                    .filter(m => m && m.trim()).join(' • ');
                 this.moods.textContent = moodText || 'No mood info';
                 
                 this.prompt.textContent = this.currentTrack.prompt || 'No description available';
@@ -743,9 +904,14 @@ async checkServerConnection() {
             }
 
             updateAudio() {
-                if (!this.currentTrack) return;
+                if (!this.currentTrack || !this.currentTrack.url) {
+                    this.debug('❌ No audio URL available');
+                    return;
+                }
+                
                 this.audio.src = this.currentTrack.url;
                 this.audio.load();
+                this.debug('🔊 Audio loaded:', this.currentTrack.url);
             }
 
             changeTheme() {
@@ -762,6 +928,8 @@ async checkServerConnection() {
                 const notes = ['♪', '♫', '♬', '🎵', '🎶'];
                 
                 setInterval(() => {
+                    if (musicalBg.children.length > 10) return; // Limit notes
+                    
                     const note = document.createElement('div');
                     note.className = 'note';
                     note.textContent = notes[Math.floor(Math.random() * notes.length)];
@@ -772,9 +940,9 @@ async checkServerConnection() {
                     musicalBg.appendChild(note);
                     
                     setTimeout(() => {
-                        note.remove();
+                        if (note.parentNode) note.remove();
                     }, 12000);
-                }, 2000);
+                }, 3000);
             }
 
             setupEventListeners() {
@@ -783,24 +951,56 @@ async checkServerConnection() {
                 this.dislikeBtn.addEventListener('click', () => this.dislikeTrack());
 
                 this.audio.addEventListener('ended', () => {
+                    this.debug('🎵 Track ended naturally');
                     this.recordPlay();
                     this.loadRandomTrack();
                 });
 
-                this.audio.addEventListener('error', () => {
-                    console.error('Audio error, skipping to next track');
-                    this.loadRandomTrack();
+                this.audio.addEventListener('error', (e) => {
+                    this.debug('❌ Audio error:', e.target.error);
+                    this.showMessage('Audio playback error, skipping to next track', 'error', 3000);
+                    setTimeout(() => this.loadRandomTrack(), 1000);
+                });
+
+                this.audio.addEventListener('loadstart', () => {
+                    this.debug('🔊 Audio loading started');
+                });
+
+                this.audio.addEventListener('canplay', () => {
+                    this.debug('🔊 Audio ready to play');
+                });
+
+                // Double click to toggle debug mode
+                this.logo = document.querySelector('.logo');
+                let clickCount = 0;
+                this.logo.addEventListener('click', () => {
+                    clickCount++;
+                    setTimeout(() => {
+                        if (clickCount === 3) {
+                            this.debugMode = !this.debugMode;
+                            localStorage.setItem('iranmix_debug', this.debugMode.toString());
+                            const debugEl = document.getElementById('debugInfo');
+                            debugEl.style.display = this.debugMode ? 'block' : 'none';
+                            this.showMessage(`Debug mode ${this.debugMode ? 'enabled' : 'disabled'}`, 'success', 2000);
+                        }
+                        clickCount = 0;
+                    }, 500);
                 });
             }
 
             playTrack() {
+                if (!this.currentTrack) return;
+                
                 this.audio.play().then(() => {
                     this.playBtn.textContent = '⏸️';
                     this.isPlaying = true;
+                    this.debug('▶️ Playing:', this.currentTrack.title);
                 }).catch(error => {
-                    console.error('Play error:', error);
+                    this.debug('❌ Play error:', error.message);
                     this.playBtn.textContent = '▶️';
                     this.isPlaying = false;
+                    this.showMessage('Playback failed, trying next track', 'error', 2000);
+                    setTimeout(() => this.loadRandomTrack(), 1000);
                 });
             }
 
@@ -809,13 +1009,14 @@ async checkServerConnection() {
                     this.audio.pause();
                     this.playBtn.textContent = '▶️';
                     this.isPlaying = false;
+                    this.debug('⏸️ Paused');
                 } else {
                     this.playTrack();
                 }
             }
 
             getTrackId(track) {
-                return track.title + '_' + track.singer;
+                return `${track.title || 'unknown'}_${track.singer || 'unknown'}`;
             }
 
             async recordPlay() {
@@ -826,17 +1027,16 @@ async checkServerConnection() {
                 this.stats.played++;
                 
                 [this.currentTrack.genre1, this.currentTrack.genre2].forEach(genre => {
-                    if (genre) {
+                    if (genre && genre.trim()) {
                         this.userPreferences.genreScores[genre] = 
                             (this.userPreferences.genreScores[genre] || 0) + 2;
                     }
                 });
                 
-                // Log to server
                 await this.logAction('play', this.currentTrack);
-                
                 this.updateStats();
-                this.saveUserData();
+                await this.saveUserData();
+                this.debug('📊 Play recorded for:', this.currentTrack.title);
             }
 
             async likeTrack() {
@@ -847,6 +1047,7 @@ async checkServerConnection() {
                 if (this.userPreferences.likes.has(trackId)) {
                     this.userPreferences.likes.delete(trackId);
                     this.stats.liked--;
+                    this.debug('💔 Removed like for:', this.currentTrack.title);
                 } else {
                     this.userPreferences.likes.add(trackId);
                     this.userPreferences.dislikes.delete(trackId);
@@ -854,19 +1055,19 @@ async checkServerConnection() {
                     if (this.stats.disliked > 0) this.stats.disliked--;
                     
                     [this.currentTrack.genre1, this.currentTrack.genre2].forEach(genre => {
-                        if (genre) {
+                        if (genre && genre.trim()) {
                             this.userPreferences.genreScores[genre] = 
                                 (this.userPreferences.genreScores[genre] || 0) + 3;
                         }
                     });
                     
-                    // Log to server
                     await this.logAction('like', this.currentTrack);
+                    this.debug('❤️ Liked:', this.currentTrack.title);
                 }
                 
                 this.updateUI();
                 this.updateStats();
-                this.saveUserData();
+                await this.saveUserData();
             }
 
             async dislikeTrack() {
@@ -877,6 +1078,7 @@ async checkServerConnection() {
                 if (this.userPreferences.dislikes.has(trackId)) {
                     this.userPreferences.dislikes.delete(trackId);
                     this.stats.disliked--;
+                    this.debug('👍 Removed dislike for:', this.currentTrack.title);
                 } else {
                     this.userPreferences.dislikes.add(trackId);
                     this.userPreferences.likes.delete(trackId);
@@ -884,14 +1086,14 @@ async checkServerConnection() {
                     if (this.stats.liked > 0) this.stats.liked--;
                     
                     [this.currentTrack.genre1, this.currentTrack.genre2].forEach(genre => {
-                        if (genre) {
+                        if (genre && genre.trim()) {
                             this.userPreferences.genreScores[genre] = 
                                 (this.userPreferences.genreScores[genre] || 0) - 2;
                         }
                     });
                     
-                    // Log to server
                     await this.logAction('skip', this.currentTrack);
+                    this.debug('👎 Disliked and skipping:', this.currentTrack.title);
                     
                     setTimeout(() => {
                         this.audio.pause();
@@ -901,7 +1103,7 @@ async checkServerConnection() {
                 
                 this.updateUI();
                 this.updateStats();
-                this.saveUserData();
+                await this.saveUserData();
             }
 
             updateStats() {
@@ -913,7 +1115,29 @@ async checkServerConnection() {
 
         // Initialize the player when page loads
         window.addEventListener('DOMContentLoaded', () => {
-            new IranMixPlayer();
+            try {
+                new IranMixPlayer();
+            } catch (error) {
+                console.error('Failed to initialize IranMix Player:', error);
+                document.getElementById('loading').innerHTML = `
+                    <div style="color: #fca5a5;">
+                        ❌ Failed to start music player<br>
+                        <small>${error.message}</small>
+                    </div>
+                `;
+            }
+        });
+
+        // Add keyboard shortcuts
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                document.getElementById('playBtn')?.click();
+            } else if (e.code === 'ArrowRight') {
+                document.getElementById('dislikeBtn')?.click();
+            } else if (e.code === 'ArrowUp') {
+                document.getElementById('likeBtn')?.click();
+            }
         });
     </script>
 </body>
