@@ -1428,15 +1428,13 @@
                     this.debug('🔊 Audio ready to play');
                 });
 
-                // Triple click to configure API key
+                // Triple-click for debug mode (removed API key configuration)
                 this.logo = document.querySelector('.logo');
                 let clickCount = 0;
                 this.logo.addEventListener('click', () => {
                     clickCount++;
                     setTimeout(() => {
                         if (clickCount === 3) {
-                            this.promptForApiKey();
-                        } else if (clickCount === 5) {
                             this.debugMode = !this.debugMode;
                             localStorage.setItem('iranmix_debug', this.debugMode.toString());
                             const debugEl = document.getElementById('debugInfo');
