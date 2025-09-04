@@ -473,32 +473,52 @@
                 }
             }
 
-            async checkServerConnection() {
-                try {
-                    const response = await fetch(`${this.SERVER_URL}/api/health`, {
-                        method: 'GET',
-                        timeout: 5000
-                    });
-                    
-                    if (response.ok) {
-                        this.isServerOnline = true;
-                        this.updateConnectionStatus('online', '🟢 Server Online');
-                    } else {
-                        throw new Error('Server not responding');
-                    }
-                } catch (error) {
-                    this.isServerOnline = false;
-                    this.updateConnectionStatus('offline', '🔴 Server Offline');
-                    console.error('Server connection failed:', error);
-                }
+async checkServerConnection() {
+    console.log('🔍 Testing server connection to:', this.serverUrl);
+    try {
+        const response = await fetch(`${this.serverUrl}/api/health`, {
+            method: 'GET',
+            mode: 'cors', // Add this
+            headers: {
+                'Content-Type': 'application/json'
             }
-
-            updateConnectionStatus(status, text) {
-                const statusEl = document.getElementById('connectionStatus');
-                statusEl.className = `connection-status ${status}`;
-                statusEl.innerHTML = text;
+        });
+        
+        console.log('🔍 Health check response status:', response.status);
+        console.log('🔍 Health check response ok:', response.ok);
+        
+        if (response.ok) {
+            const data = await response.json();
+            console.log('🔍 Health check data:', data);
+            
+            this.isServerAvailable = true;
+            this.updateConnectionStatus('online', 'Server Connected');
+            console.log('✅ Server connection successful');
+        } else {
+            throw new Error(`Server returned ${response.status}`);
+        }
+    } catch (error) {
+        console.error('❌ Server connection failed:', error);
+        this.isServerAvailable = false;
+        this.updateConnectionStatus('offline', 'Offline Mode');
+        
+        // Try manual test to see if it's just the health endpoint
+        console.log('🔧 Trying manual connection test...');
+        try {
+            const testResponse = await fetch(`${this.serverUrl}/api/user/${this.userId}`, {
+                method: 'GET',
+                mode: 'cors'
+            });
+            if (testResponse.ok) {
+                console.log('✅ Manual test works - health endpoint might be the issue');
+                this.isServerAvailable = true;
+                this.updateConnectionStatus('online', 'Server Connected (Manual Test)');
             }
-
+        } catch (manualError) {
+            console.error('❌ Manual test also failed:', manualError);
+        }
+    }
+}
             async loadAllData() {
                 if (!this.isServerOnline) {
                     document.getElementById('songContent').innerHTML = 
