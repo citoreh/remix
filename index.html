@@ -645,7 +645,7 @@
             }
 
             promptForApiKey() {
-                const apiKey = prompt('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');
+                const apiKey = prompt('Enter your Anthropic API key for AI playlist features:\n\nGet one at: https://console.anthropic.com/');
                 if (apiKey && apiKey.trim()) {
                     this.anthropicApiKey = apiKey.trim();
                     localStorage.setItem('iranmix_api_key', this.anthropicApiKey);
