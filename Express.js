@@ -1,3 +1,7 @@
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ status: 'healthy', timestamp: new Date().toISOString() });
+});
+
 // Add this to your server (Express.js example)
 app.post('/api/generate-playlist', async (req, res) => {
   try {
