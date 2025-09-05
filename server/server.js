@@ -1,3 +1,28 @@
+import express from 'express';
+import cors from 'cors';
+import { createRequestHandler } from '@remix-run/express';
+
+const app = express();
+
+// Enable CORS for the front-end origin
+app.use(cors({
+  origin: 'https://iranix.vercel.app', // Allow only your front-end origin
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Allowed methods
+  allowedHeaders: ['Content-Type', 'Authorization'], // Allowed headers
+}));
+
+// Remix request handler
+app.all('*', createRequestHandler({
+  build: require('./build'),
+}));
+
+const port = process.env.PORT || 3000;
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`);
+});
+
+
+
 // Minimal working server.js for Railway deployment
 const express = require('express');
 const cors = require('cors');
